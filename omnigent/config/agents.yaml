@@ -1,0 +1,26 @@
+version: 1
+orchestration:
+  provider: omnigent
+  fallback: local
+agents:
+  - name: literature
+    inputs: [Detection]
+    outputs: [LiteratureEvidence]
+  - name: planner
+    inputs: [Detection, LiteratureEvidence, ExperimentResult]
+    outputs: [PlannerDecision]
+  - name: experiment_runner
+    inputs: [ExperimentSpec]
+    outputs: [ExperimentResult]
+  - name: analysis
+    inputs: [ExperimentResult]
+    outputs: [Scorecard]
+  - name: red_team
+    inputs: [ExperimentResult]
+    outputs: [RobustnessResult]
+  - name: portfolio
+    inputs: [Scorecard]
+    outputs: [PortfolioDecision]
+  - name: safety
+    inputs: [PortfolioDecision]
+    outputs: [SafetyDecision]
