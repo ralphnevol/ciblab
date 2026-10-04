@@ -11,7 +11,7 @@ executor:
   type: omnigent
   config:
     harness: openai
-  model: gpt-4o-mini
+  model: gpt-6-luna
 
 os_env:
   type: caller_process
