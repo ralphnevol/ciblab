@@ -360,6 +360,12 @@ async function startFuzz() {
     log('\\n📋 Research Event Timeline:');
     events.forEach((e, i) => {
       log(`   ${i+1}. [${e.agent}] ${e.action} (confidence: ${e.confidence})`);
+      if (e.action === 'hypothesis_and_corpus' && e.output && e.output.hypothesis) {
+        log(`      💡 Hipótesis (GPT-6 Luna): "${e.output.hypothesis}"`);
+      }
+      if (e.action === 'experiment_selection' && e.output && e.output.rationale) {
+        log(`      ⚖️  Planificación: ${e.output.rationale}`);
+      }
     });
   } catch(err) { log('❌ Error: ' + err.message); }
 }

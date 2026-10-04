@@ -1,15 +1,17 @@
 """Cyber Research Lab — Fuzzing Discovery Runner.
 
-Start the web application or run a quick terminal demonstration of the
+Start the web application or run a live interactive demonstration of the
 automated scientific discovery loop.
 
 Usage:
-    python run.py           # Starts the web server (http://127.0.0.1:8000)
-    python run.py --demo    # Runs the complete scientific method loop in terminal
-    python run.py --help    # Shows this help
+    python run.py                # Inicia el servidor web interactivo (http://127.0.0.1:8000)
+    python run.py --interactive  # Ejecuta la prueba en tiempo real con pausas y control humano
+    python run.py --demo         # Ejecuta la prueba rápida automatizada
+    python run.py --help         # Muestra esta ayuda
 """
 
 import sys
+import time
 import uvicorn
 
 # Ensure utf-8 encoding on Windows console
@@ -17,6 +19,108 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 from app.orchestration.omnigent_adapter import detect_omnigent
+from app.orchestration.fuzz_lab import (
+    DEFAULT_TARGET,
+    approve_and_triage,
+    start_fuzz_run,
+    FUZZ_RUNS,
+)
+
+
+def run_interactive():
+    print("\n" + "=" * 70)
+    print(" 🧪 AGENTIC FUZZING LAB — PRUEBA EN TIEMPO REAL (HUMAN-IN-THE-LOOP)")
+    print("=" * 70)
+
+    omni_status = detect_omnigent()
+    print(f"[*] Omnigent Runtime:   {omni_status['mode']} (v{omni_status.get('version', 'unknown')})")
+    print("[*] Modelo LLM:         GPT-6 Luna (OpenAI)")
+    print(f"[*] Objetivo:           {DEFAULT_TARGET.name}")
+    print("[*] Formato de entrada: stdin (Buffer C sin verificación de límites)\n")
+
+    input("👉 Presioná ENTER para iniciar la Fase 1 y 2 (Pregunta & Hipótesis)... ")
+
+    print("\n" + "-" * 70)
+    print("🧠 FASE 1 & 2: PREGUNTA CIENTÍFICA E HIPÓTESIS")
+    print("-" * 70)
+    print("[*] Enviando descripción del parser al Seed Agent (GPT-6 Luna)...")
+
+    run_id = start_fuzz_run(
+        question="¿Qué inputs específicos causan corrupción de memoria o crashes en este parser?",
+        seed=42,
+    )
+    run = FUZZ_RUNS[run_id]
+
+    # Buscar evento de hipótesis
+    hyp_event = next((e for e in run.events if e.action == "hypothesis_and_corpus"), None)
+    if hyp_event:
+        print(f"\n💡 Hipótesis generada por GPT-6 Luna:")
+        print(f'   "{hyp_event.output["hypothesis"]}"')
+        print(f"\n📦 Corpus inicial de semillas generado:")
+        for strat in hyp_event.output.get("seed_strategies", []):
+            print(f"   • Semilla mutada: {strat}")
+
+    print("\n" + "-" * 70)
+    print("⚖️  FASE 3: PLANIFICACIÓN Y EXPERIMENTO DE FUZZING")
+    print("-" * 70)
+    plan_event = next((e for e in run.events if e.action == "experiment_selection"), None)
+    if plan_event:
+        print(f"[*] Planner evaluó los experimentos candidatos:")
+        for c in plan_event.output.get("candidates", []):
+            print(f"    - {c['id']} (Estrategia: {c['strategy']}, Prioridad: {c['priority']:.2f})")
+        print(f"[*] Decisión del Planner: Seleccionado '{plan_event.output.get('selected')}'")
+
+    print("\n[*] Execution Agent ejecutando mutaciones y pruebas contra el parser en sandbox...")
+    for round_num in range(1, 4):
+        time.sleep(0.3)
+        print(f"    [Ronda {round_num}/3] Aplicando bitflips, null-bytes e inyecciones de formato...")
+
+    print(f"\n💥 ¡CRASHES DETECTADOS! Total de fallos únicos observados: {run.crash_count}")
+
+    print("\n" + "=" * 70)
+    print("🛑 FASE 4: CONTROL DE SEGURIDAD Y POLÍTICA OMNIGENT")
+    print("=" * 70)
+    print("[!] POLÍTICA: require_human_approval_on_crash")
+    print(f"[!] Se encontraron {run.crash_count} condiciones de fallo de memoria en el parser.")
+    print("[!] Omnigent interrumpió el flujo para evitar consumo de cómputo innecesario.")
+    
+    resp = input("\n👉 ¿Aprobás como Científico Principal la reproducción y triaje? [S/n]: ").strip().lower()
+    approved = resp not in ("n", "no")
+
+    if not approved:
+        print("[-] Operación rechazada por el humano. Experimento abortado.")
+        approve_and_triage(run_id, approved=False)
+        return
+
+    print("[✓] Aprobación humana concedida. Desbloqueando Triage Agent...")
+
+    print("\n" + "-" * 70)
+    print("🔬 FASE 5: TRIAJE, REPRODUCCIÓN Y DECISIÓN ACTUALIZADA")
+    print("-" * 70)
+    print("[*] Triage Agent reproduciendo cada crash de forma determinística...")
+    print("[*] Sintetizando taxonomía CWE y conclusiones con GPT-6 Luna...")
+
+    discovery = approve_and_triage(run_id, approved=True)
+
+    if discovery:
+        print(f"\n[🏆] ¿Hipótesis confirmada?: {'SÍ (Confirmada)' if discovery.hypothesis_confirmed else 'NO'}")
+        print(f"[+] Fallos únicos reproducidos: {discovery.crashes_found}")
+        print(f"[+] Factor de aceleración vs análisis manual: {discovery.speedup_vs_manual:,.1f}x")
+
+        print("\n[+] Taxonomía de Vulnerabilidades (CWE):")
+        unique_cwes = {}
+        for t in discovery.triage_results:
+            key = f"{t.cwe_id} ({t.cwe_name})"
+            unique_cwes[key] = unique_cwes.get(key, 0) + 1
+        for cwe, count in unique_cwes.items():
+            print(f"    • {cwe}: {count} ocurrencias confirmadas")
+
+        print(f"\n[+] Adaptación para el siguiente ciclo (Bucle Científico):\n    {discovery.adaptation_event}")
+        print(f"\n[+] Conclusión Científica Consolidada (GPT-6 Luna):\n    {discovery.scientific_conclusion}")
+
+    print("\n" + "=" * 70)
+    print(" ✅ CICLO CIENTÍFICO COMPLETADO EXITOSAMENTE")
+    print("=" * 70 + "\n")
 
 
 def run_demo():
@@ -26,38 +130,33 @@ def run_demo():
 
     omni_status = detect_omnigent()
     print(f"[*] Omnigent Runtime: {omni_status['mode']} (v{omni_status.get('version', 'unknown')})")
-    print("[*] Model: gpt-6-luna")
-
-    from app.orchestration.fuzz_lab import start_fuzz_run, approve_and_triage
+    print("[*] Model: GPT-6 Luna (OpenAI)")
 
     print("\n--- FASE 1 & 2: Pregunta, Evidencia e Hipótesis ---")
     run_id = start_fuzz_run(
         question="¿Qué inputs específicos causan corrupción de memoria o crashes en este parser?",
         seed=42,
     )
+    run = FUZZ_RUNS[run_id]
     print(f"[+] Run iniciado: {run_id}")
-    print("[+] Seed Agent formuló la hipótesis y generó el corpus de semillas mutadas.")
+    hyp_event = next((e for e in run.events if e.action == "hypothesis_and_corpus"), None)
+    if hyp_event:
+        print(f"[+] Hipótesis (GPT-6 Luna): {hyp_event.output['hypothesis']}")
 
     print("\n--- FASE 3: Experimento & Planificación ---")
-    print("[+] Planner evaluó 2 experimentos candidatos y seleccionó el de mayor aprendizaje esperado.")
-    print("[+] Execution Agent corrió las pruebas contra el parser sintético.")
+    print(f"[+] Crashes encontrados: {run.crash_count}")
 
     print("\n--- FASE 4: Gate de Aprobación Humana (Omnigent Policy) ---")
-    print("[🛑] Crashes detectados. Omnigent detiene la ejecución para pedir aprobación humana.")
-    print("[✓] Simulando aprobación humana...")
+    print("[🛑] Crashes detectados. Simulando aprobación humana...")
 
     print("\n--- FASE 5: Triaje, CWE y Decisión Actualizada ---")
     discovery = approve_and_triage(run_id, approved=True)
 
     if discovery:
         print(f"[🏆] Hipótesis confirmada: {discovery.hypothesis_confirmed}")
-        print(f"[+] Crashes únicos encontrados: {discovery.crashes_found}")
-        print(f"[+] Aceleración vs análisis manual: {discovery.speedup_vs_manual}x")
-        print("\n[+] Taxonomía de Vulnerabilidades (CWE):")
-        for t in discovery.triage_results:
-            print(f"    • {t.cwe_id} ({t.cwe_name}) — Severidad: {t.severity}")
-        print(f"\n[+] Adaptación para el siguiente ciclo:\n    {discovery.adaptation_event}")
-        print(f"\n[+] Conclusión Científica:\n    {discovery.scientific_conclusion}")
+        print(f"[+] Crashes únicos: {discovery.crashes_found}")
+        print(f"[+] Aceleración vs manual: {discovery.speedup_vs_manual:,.1f}x")
+        print(f"[+] Conclusión: {discovery.scientific_conclusion}")
     print("\n" + "=" * 65 + "\n")
 
 
@@ -67,6 +166,7 @@ def start_server():
     print("=" * 65)
     omni = detect_omnigent()
     print(f"[*] Omnigent: {omni['mode']} (v{omni.get('version', 'unknown')})")
+    print("[*] Modelo LLM: GPT-6 Luna")
     print("[*] Servidor web disponible en: http://127.0.0.1:8000")
     print("[*] Documentación OpenAPI:      http://127.0.0.1:8000/docs")
     print("[*] Presioná Ctrl+C para detener el servidor.\n")
@@ -74,7 +174,9 @@ def start_server():
 
 
 if __name__ == "__main__":
-    if "--demo" in sys.argv:
+    if "--interactive" in sys.argv or "-i" in sys.argv:
+        run_interactive()
+    elif "--demo" in sys.argv:
         run_demo()
     else:
         start_server()

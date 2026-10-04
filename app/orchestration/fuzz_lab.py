@@ -11,8 +11,13 @@ This module is the PI (Principal Investigator) that coordinates:
 
 from __future__ import annotations
 
+import os
 import time
 from uuid import uuid4
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from app.agents.seed_agent import generate_corpus
 from app.agents.execution_agent import run_fuzz_experiment
@@ -26,6 +31,41 @@ from app.models.schemas import (
     SafetyOutcome,
 )
 from app.storage.research_store import STORE
+
+
+def _generate_conclusion_with_llm(
+    hypothesis: str,
+    crashes: list,
+    triage_results: list,
+    critical_count: int,
+    rejected_strategy: str,
+) -> str | None:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        cwes = ", ".join(list({f"{t.cwe_id} ({t.cwe_name})" for t in triage_results}))
+        prompt = (
+            f"You are the Principal Investigator in an automated cyber scientific discovery lab.\n"
+            f"Synthesize the final scientific conclusion (3-4 sentences) based on experimental evidence:\n"
+            f"Initial Hypothesis: {hypothesis}\n"
+            f"Total Crashes Discovered: {len(crashes)}\n"
+            f"Critical Vulnerabilities Confirmed: {critical_count}\n"
+            f"Taxonomy Confirmed: {cwes}\n"
+            f"Adaptation Decision: Next cycle will explore '{rejected_strategy}'.\n"
+            f"State clearly if the hypothesis was confirmed, the significance of the findings, and the updated research decision."
+        )
+        resp = client.chat.completions.create(
+            model="gpt-6-luna",
+            messages=[{"role": "user", "content": prompt}],
+            max_completion_tokens=250,
+        )
+        content = resp.choices[0].message.content
+        return content.strip() if content else None
+    except Exception:
+        return None
 
 
 # ── Run state ────────────────────────────────────────────────────────
@@ -295,6 +335,14 @@ def approve_and_triage(run_id: str, approved: bool = True) -> FuzzDiscovery | No
     actual_time = time.perf_counter() - run.started_at
     speedup = total_manual_time / max(actual_time, 0.001)
 
+    llm_conclusion = _generate_conclusion_with_llm(
+        hypothesis=corpus.hypothesis,
+        crashes=crashes,
+        triage_results=triage_results,
+        critical_count=critical_count,
+        rejected_strategy=rejected.corpus_strategy,
+    )
+
     discovery = FuzzDiscovery(
         case_id=run.case_id,
         question=question,
@@ -305,7 +353,7 @@ def approve_and_triage(run_id: str, approved: bool = True) -> FuzzDiscovery | No
         crashes_found=len(crashes),
         triage_results=triage_results,
         adaptation_event=adaptation,
-        scientific_conclusion=(
+        scientific_conclusion=llm_conclusion or (
             f"The agentic fuzzing lab discovered {len(crashes)} unique crashes in the "
             f"synthetic vulnerable parser. Triage confirmed {critical_count} critical "
             f"vulnerabilities (buffer overflow, format string, null byte injection). "

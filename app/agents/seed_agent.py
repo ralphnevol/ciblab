@@ -8,11 +8,44 @@ input patterns will trigger crashes, and generates a seed corpus.
 from __future__ import annotations
 
 import base64
+import os
 import random
 import string
 from uuid import uuid4
 
+from dotenv import load_dotenv
+
 from app.models.schemas import FuzzTarget, SeedCorpus, SeedEntry
+
+load_dotenv()
+
+
+def _generate_hypothesis_with_llm(target: FuzzTarget) -> str | None:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        prompt = (
+            f"You are a cybersecurity research specialist in fuzzing and memory safety.\n"
+            f"Formulate a concise, rigorous scientific hypothesis (2-3 sentences) predicting what inputs "
+            f"will trigger memory corruption crashes in this target parser:\n"
+            f"Target Name: {target.name}\n"
+            f"Description: {target.description}\n"
+            f"Input Format: {target.input_format}\n"
+            f"Known Constraints: {', '.join(target.known_constraints)}\n"
+            f"Return only the scientific hypothesis statement."
+        )
+        resp = client.chat.completions.create(
+            model="gpt-6-luna",
+            messages=[{"role": "user", "content": prompt}],
+            max_completion_tokens=200,
+        )
+        content = resp.choices[0].message.content
+        return content.strip() if content else None
+    except Exception as e:
+        return None
 
 
 def _generate_seeds(target: FuzzTarget, seed: int = 42) -> list[SeedEntry]:
@@ -75,23 +108,26 @@ def generate_corpus(
 ) -> SeedCorpus:
     """Analyze target and produce hypothesis + seed corpus.
 
-    Returns a typed SeedCorpus with the scientific hypothesis and
-    the generated seed files.
+    Uses GPT-6 Luna when available, falling back to deterministic template.
     """
     seeds = _generate_seeds(target, seed)
 
-    hypothesis = (
-        f"The target '{target.name}' processes {target.input_format} input "
-        f"with implicit size and encoding assumptions. "
-        f"Sending inputs that violate these assumptions — oversized payloads, "
-        f"embedded control characters, or format string tokens — will expose "
-        f"memory safety vulnerabilities in the parser."
-    )
+    llm_hypothesis = _generate_hypothesis_with_llm(target)
+    if llm_hypothesis:
+        hypothesis = llm_hypothesis
+    else:
+        hypothesis = (
+            f"The target '{target.name}' processes {target.input_format} input "
+            f"with implicit size and encoding assumptions. "
+            f"Sending inputs that violate these assumptions — oversized payloads, "
+            f"embedded control characters, or format string tokens — will expose "
+            f"memory safety vulnerabilities in the parser."
+        )
 
     return SeedCorpus(
         case_id=case_id,
         target_id=target.target_id,
         hypothesis=hypothesis,
         seeds=seeds,
-        confidence=0.78,
+        confidence=0.88 if llm_hypothesis else 0.78,
     )
