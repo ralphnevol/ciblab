@@ -89,24 +89,44 @@ class DetectionScorecard(BaseModel):
 class RobustnessResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
     baseline_score: float
+    evasion_technique: str
+    strengths_tested: list[float]
     adapted_scores: list[float]
     degradation_curve: list[float]
+    reference_degradation: float
     breaking_parameters: dict[str, Any]
     explanation: str
     confidence: Confidence
 
 
+class UncertaintyEstimate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    value: float
+    components: dict[str, float]
+
+
 class PlannerDecision(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    selected_test: str
+    selected_test: str | None
+    provisional_decision: Decision
+    uncertainty: float
     remaining_budget: int
+    planned_follow_up: str | None
     rejected_alternatives: list[dict[str, Any]]
     estimated_value: float
     rationale: str
 
 
+class ApprovalStatus(str, Enum):
+    NOT_REQUIRED = "NOT_REQUIRED"
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
 class PortfolioDecision(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    decision_id: str
     detection_id: str
     decision: Decision
     rationale: str
@@ -116,6 +136,7 @@ class PortfolioDecision(BaseModel):
     uncertainty: float
     recommended_next_test: str | None
     requires_human_approval: bool
+    approval_status: ApprovalStatus = ApprovalStatus.NOT_REQUIRED
 
 
 class SafetyOutcome(str, Enum):
@@ -167,3 +188,4 @@ class EvaluationResult(BaseModel):
     justification_quality: float
     adaptation_count: int
     reproducibility_result: bool
+    undecided: list[str] = Field(default_factory=list)

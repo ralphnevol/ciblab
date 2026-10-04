@@ -1,0 +1,8 @@
+# Public web search for literature evidence (keyless, rate-limited). Only synthetic
+# detection names and descriptions are ever sent as queries.
+name: keenable
+description: Live web search and page-content fetch via the Keenable MCP server.
+transport: http
+url: https://api.keenable.ai/mcp
+headers:
+  X-Keenable-Title: Detection Triage Lab

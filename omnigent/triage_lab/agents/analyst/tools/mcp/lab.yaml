@@ -1,0 +1,6 @@
+# Detection Triage Lab tools for the analyst role. Auto-discovered by omnigent.
+# The lab (uvicorn app.main:app) must be running on the same host as `omni host`.
+name: triage_lab
+description: Detection Triage Lab tools available to the analyst agent.
+transport: http
+url: http://127.0.0.1:8000/lab/analyst/mcp

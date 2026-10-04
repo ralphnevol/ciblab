@@ -1,0 +1,132 @@
+{
+  "_comment": "Environment-side simulator parameters. Read only by app/experiments/synthetic_generator.py; never exposed to agents.",
+  "benign_mean": 0.0,
+  "detections": {
+    "D01": {
+      "malicious_mean": 3.794,
+      "evasion_capacity": 0.3,
+      "technique": "staggered_downloads",
+      "overlap": 0.25,
+      "overlaps_with": "D09"
+    },
+    "D02": {
+      "malicious_mean": 4.057,
+      "evasion_capacity": 0.25,
+      "technique": "device_id_spoofing",
+      "overlap": 0.15,
+      "overlaps_with": "D17"
+    },
+    "D03": {
+      "malicious_mean": 3.981,
+      "evasion_capacity": 2.5,
+      "technique": "timing_randomisation",
+      "overlap": 0.1,
+      "overlaps_with": "D06"
+    },
+    "D04": {
+      "malicious_mean": 1.683,
+      "evasion_capacity": 0.3,
+      "technique": "alternate_webmail_domain",
+      "overlap": 0.4,
+      "overlaps_with": "D05"
+    },
+    "D05": {
+      "malicious_mean": 2.217,
+      "evasion_capacity": 0.4,
+      "technique": "attachment_splitting",
+      "overlap": 0.45,
+      "overlaps_with": "D04"
+    },
+    "D06": {
+      "malicious_mean": 1.544,
+      "evasion_capacity": 0.2,
+      "technique": "working_hours_blending",
+      "overlap": 0.5,
+      "overlaps_with": "D11"
+    },
+    "D07": {
+      "malicious_mean": 3.684,
+      "evasion_capacity": 0.35,
+      "technique": "device_reuse",
+      "overlap": 0.2,
+      "overlaps_with": "D11"
+    },
+    "D08": {
+      "malicious_mean": 2.134,
+      "evasion_capacity": 0.5,
+      "technique": "proxy_category_evasion",
+      "overlap": 0.3,
+      "overlaps_with": "D09"
+    },
+    "D09": {
+      "malicious_mean": 3.917,
+      "evasion_capacity": 0.3,
+      "technique": "upload_throttling",
+      "overlap": 0.25,
+      "overlaps_with": "D01"
+    },
+    "D10": {
+      "malicious_mean": 1.59,
+      "evasion_capacity": 0.3,
+      "technique": "portable_client",
+      "overlap": 0.35,
+      "overlaps_with": "D09"
+    },
+    "D11": {
+      "malicious_mean": 1.577,
+      "evasion_capacity": 0.4,
+      "technique": "low_and_slow_guessing",
+      "overlap": 0.55,
+      "overlaps_with": "D07"
+    },
+    "D12": {
+      "malicious_mean": 4.128,
+      "evasion_capacity": 0.3,
+      "technique": "argument_obfuscation",
+      "overlap": 0.2,
+      "overlaps_with": "D16"
+    },
+    "D13": {
+      "malicious_mean": 2.318,
+      "evasion_capacity": 0.4,
+      "technique": "task_name_masquerade",
+      "overlap": 0.35,
+      "overlaps_with": "D12"
+    },
+    "D14": {
+      "malicious_mean": 3.794,
+      "evasion_capacity": 0.3,
+      "technique": "tool_renaming",
+      "overlap": 0.2,
+      "overlaps_with": "D12"
+    },
+    "D15": {
+      "malicious_mean": 2.16,
+      "evasion_capacity": 0.3,
+      "technique": "print_batching",
+      "overlap": 0.25,
+      "overlaps_with": "D01"
+    },
+    "D16": {
+      "malicious_mean": 1.548,
+      "evasion_capacity": 0.3,
+      "technique": "process_masquerade",
+      "overlap": 0.45,
+      "overlaps_with": "D12"
+    },
+    "D17": {
+      "malicious_mean": 3.917,
+      "evasion_capacity": 0.3,
+      "technique": "rename_throttling",
+      "overlap": 0.15,
+      "overlaps_with": "D02"
+    },
+    "D18": {
+      "malicious_mean": 3.794,
+      "evasion_capacity": 2.0,
+      "technique": "tool_renaming",
+      "overlap": 0.2,
+      "overlaps_with": "D14"
+    }
+  }
+}
