@@ -67,6 +67,35 @@ Salida esperada:
 
 ---
 
+### Opción 3: Probar los Agentes en la UI Web Oficial de Omnigent (`:6767`)
+Para chatear directamente con los agentes de IA en streaming, inspeccionar la invocación visual de tools y auditar sesiones:
+```bash
+# Levantar el servidor web de Omnigent con todos los agentes:
+python -m omnigent server --agent omnigent/agents/fuzz-orchestrator/ --agent omnigent/agents/seed-agent/ --agent omnigent/agents/execution-agent/ --agent omnigent/agents/safety-agent/ --agent omnigent/agents/triage-agent/ --background
+```
+Abrí tu navegador en:
+👉 **`http://127.0.0.1:6767`**
+
+*En la UI hacé clic en **"+ New Chat"**, seleccioná `seed_agent` o `fuzz_orchestrator` e interactuá en lenguaje natural.*
+
+---
+
+### Opción 4: Ejecución en macOS y Linux (Bash / Zsh)
+En macOS y Linux la codificación UTF-8 y los sockets POSIX son nativos, por lo que Omnigent funciona directamente sin ajustes adicionales:
+```bash
+# 1. Cargar variables del .env
+export $(grep -v '^#' .env | xargs)
+
+# 2. Levantar el servidor web de Omnigent
+omni server --agent omnigent/agents/fuzz-orchestrator/ --agent omnigent/agents/seed-agent/ --background
+
+# 3. O ejecutar por consola directamente:
+omni run omnigent/agents/seed-agent/
+```
+*(Ver la guía completa en [`docs/OMNIGENT_GUIDE.md`](OMNIGENT_GUIDE.md)).*
+
+---
+
 ## 3. El Ciclo del Método Científico en Fuzzing
 
 El sistema sigue de forma estricta las 5 fases metodológicas:

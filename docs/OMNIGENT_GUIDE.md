@@ -48,7 +48,7 @@ $env:PATH += ";$((Get-Item env:APPDATA).Value)\..\Local\Packages\PythonSoftwareF
 2. **Credenciales en el entorno:** Omnigent lee `OPENAI_API_KEY` directamente de las variables del proceso de PowerShell (no lee archivos `.env` automáticamente).
 3. **Servidor en background:** Para evitar timeouts al arrancar, se debe iniciar primero el servidor local con `server --background` o pasar `--server http://127.0.0.1:6767`.
 
-### El comando directo completo en PowerShell:
+### El comando directo en Windows (PowerShell):
 ```powershell
 # 1. Configurar encoding y cargar credenciales en la sesión
 $env:PYTHONUTF8 = 1
@@ -64,27 +64,161 @@ python -m omnigent run omnigent/agents/seed-agent/ --server http://127.0.0.1:676
 
 ---
 
-### La Alternativa Rápida (Atajo en `run.py`)
-Para que no tengas que escribir esas 4 líneas de configuración de variables en cada terminal, creamos el atajo:
-```powershell
-python run.py --omni seed-agent
+### En macOS y Linux (Bash / Zsh): ¿Por qué funciona de forma directa y nativa?
+
+En sistemas basados en UNIX (macOS y Linux) **la experiencia con Omnigent es 100% nativa y fluida**:
+
+1. **UTF-8 nativo por defecto:** Los entornos UNIX tienen configurada la variable `LANG=en_US.UTF-8` o equivalente. El demonio de túnel de Omnigent emite caracteres Unicode (el checkmark `✓` o `\u2713`, flechas de progreso `➜`). En Windows esto genera el error `charmap codec can't encode character` bajo `cp1252`, pero en Mac y Linux se procesa directamente sin requerir flags adicionales.
+2. **Sockets y TTYs POSIX:** Omnigent gestiona los procesos locales del agente y la conexión WebSocket mediante interfaces POSIX estándar (`pty`, `fork`), las cuales funcionan de manera instantánea y sin bloqueos de red local o timeouts de named pipes.
+3. **Binarios en el PATH:** Al instalar con `pip install omnigent` en Linux/Mac, los ejecutables `omni` y `omnigent` se instalan habitualmente en `/usr/local/bin` o `~/.local/bin` (o en el directorio `bin/` de tu virtualenv), quedando disponibles de inmediato en la terminal.
+
+---
+
+#### Guía Paso a Paso para macOS y Linux
+
+##### 1. Configurar Entorno y Credenciales
+Abrí tu terminal (Terminal en macOS, Bash/Zsh en Linux):
+```bash
+# Entrar al directorio del proyecto
+cd ciblab
+
+# Cargar las variables de entorno desde el archivo .env (incluye OPENAI_API_KEY)
+export $(grep -v '^#' .env | xargs)
+
+# Verificar que la variable esté disponible
+echo "API Key configurada: ${OPENAI_API_KEY:0:10}..."
 ```
-o para el orquestador principal:
-```powershell
+
+##### 2. Iniciar el Servidor de Omnigent con todos los agentes pre-registrados
+Para tener disponibles **los 5 agentes del laboratorio** en la interfaz web y en la CLI:
+
+```bash
+omni server --agent omnigent/agents/fuzz-orchestrator/ \
+            --agent omnigent/agents/seed-agent/ \
+            --agent omnigent/agents/execution-agent/ \
+            --agent omnigent/agents/safety-agent/ \
+            --agent omnigent/agents/triage-agent/ \
+            --background
+```
+*(Nota: Si no tenés `omni` en tu PATH, podés usar `python3 -m omnigent server ...` con los mismos parámetros).*
+
+Para verificar que el servidor está levantado y saludable:
+```bash
+omni server status
+```
+Salida esperada:
+```text
+Background server: running at http://127.0.0.1:6767 (pid 45892, port 6767)
+  log: ~/.omnigent/logs/server/...
+  live sessions: 1
+  host daemon attached: yes
+```
+
+##### 3. Ejecutar un Agente en la Terminal (Opcional)
+Si querés interactuar desde la consola en lugar del navegador:
+```bash
+omni run omnigent/agents/seed-agent/
+```
+En macOS/Linux el REPL interactivo abrirá de inmediato la sesión con **GPT-6 Luna**, mostrando el prompt del agente y esperando tus órdenes.
+
+---
+
+### La Alternativa Rápida Multiplataforma (Atajo en `run.py`)
+Tanto en Windows como en Mac o Linux, creamos un atajo en Python que automatiza la configuración de entorno y el chequeo del servidor:
+```bash
+python run.py --omni seed-agent
+# o para el orquestador:
 python run.py --omni fuzz-orchestrator
 ```
-Este comando hace exactamente lo mismo por debajo: inyecta el UTF-8, carga tu clave de `.env`, levanta el servidor y conecta la sesión interactiva con Omnigent.
 
 ---
 
-### Ver la Sesión en la Interfaz Gráfica Oficial de Omnigent
-Cuando el servidor de Omnigent está corriendo, podés abrir en tu navegador:
+## 4. Paso a Paso: Probar los Agentes desde la UI Web Oficial de Omnigent
+
+Omnigent incluye un **servidor web completo con una interfaz gráfica (SPA moderna en React)** para interactuar con tus agentes en el navegador sin tocar la terminal, monitorear el razonamiento en streaming y ver la ejecución de herramientas en vivo.
+
+### Paso 1: Levantar el Servidor Web de Omnigent
+Asegurate de que el servidor esté corriendo en segundo plano con los agentes registrados:
+
+**En macOS / Linux:**
+```bash
+omni server --agent omnigent/agents/fuzz-orchestrator/ \
+            --agent omnigent/agents/seed-agent/ \
+            --agent omnigent/agents/execution-agent/ \
+            --agent omnigent/agents/safety-agent/ \
+            --agent omnigent/agents/triage-agent/ \
+            --background
+```
+
+**En Windows (PowerShell):**
+```powershell
+python -m omnigent server --agent omnigent/agents/fuzz-orchestrator/ --agent omnigent/agents/seed-agent/ --agent omnigent/agents/execution-agent/ --agent omnigent/agents/safety-agent/ --agent omnigent/agents/triage-agent/ --background
+```
+
+*(Si necesitás reiniciar el servidor para recargar cambios: ejecutá `omni server stop` o `python -m omnigent server stop` y luego volvé a ejecutar el comando de arriba).*
+
+---
+
+### Paso 2: Abrir la Interfaz Web en el Navegador
+Abrí cualquier navegador web moderno (Chrome, Firefox, Safari, Edge) e ingresá a:
+
 👉 **`http://127.0.0.1:6767`**
-Ahí vas a ver la UI oficial de Omnigent con las sesiones activas, las herramientas invocadas y los logs en tiempo real.
+
+Vas a ver la interfaz oscura oficial de Omnigent:
+* Panel lateral izquierdo con el historial de sesiones y conversaciones.
+* Botón superior **"+ New Chat"** para iniciar una interacción.
+* Selector de agentes registrados en la barra superior.
 
 ---
 
-## 4. Estructura de un Agente Omnigent (`config.yaml`)
+### Paso 3: Probar un Agente en la UI
+
+#### Caso A: Probar el `seed_agent` (Formulación de Hipótesis y Corpus)
+1. Hacé clic en **"+ New Chat"**.
+2. En el menú desplegable de selección de modelo/agente, elegí **`seed_agent`**.
+3. En la caja de texto inferior, escribí tu indicación:
+   ```text
+   Analiza la estructura del parser binario vulnerable y formula una hipótesis científica junto con un corpus de 5 semillas de prueba para provocar fallos de memoria.
+   ```
+4. Presioná `Enter` o hacé clic en el botón de enviar.
+
+#### Qué vas a ver en la pantalla:
+1. **Streaming de Razonamiento (CoT):** Verás cómo **GPT-6 Luna** analiza la especificación (`DATA_STREAM_v1`, longitud esperada, tokens de control).
+2. **Invocación Visual de Herramientas (Tool Call):** Aparecerá un bloque interactivo con el nombre `Tool Call: generate_corpus`. Podés desplegarlo para ver cómo ejecutó el código Python de [`app/agents/seed_agent.py`](../app/agents/seed_agent.py) y las 5 semillas en hexadecimal generadas.
+3. **Respuesta Sintetizada:** El agente presenta la hipótesis explicada de forma clara y lista para alimentar al planificador.
+
+---
+
+#### Caso B: Probar el `fuzz_orchestrator` (Investigador Principal - Ciclo Completo)
+1. Iniciá un **New Chat** y seleccioná el agente **`fuzz_orchestrator`**.
+2. Escribí:
+   ```text
+   Inicia una investigación científica autónoma sobre el objetivo vulnerable.
+   ```
+3. **Qué vas a ver en la pantalla:**
+   - El orquestador ejecuta la herramienta `run_fuzz_discovery` vinculada a [`app/orchestration/fuzz_lab.py`](../app/orchestration/fuzz_lab.py).
+   - Verás la ejecución en streaming: generación de semillas -> selección del experimento de mayor valor -> ejecución de 30+ mutaciones -> **bloqueo en la puerta de seguridad (Human Approval Gate)**.
+   - El agente informará que se descubrieron anomalías de memoria y que requiere la aprobación humana para continuar con la fase de triaje.
+4. Para autorizar la reproducción y clasificación de fallos, escribí en el mismo chat:
+   ```text
+   Apruebo la reproducción de crashes y el triaje.
+   ```
+   El orquestador llamará a `approve_triage`, reproducirá los fallos, clasificará los CWEs (CWE-120, CWE-134, CWE-626) y emitirá la conclusión científica final con las métricas de aceleración.
+
+---
+
+### Paso 4: Diferencia con la UI Web del Cyber Lab (`http://127.0.0.1:8000`)
+
+En nuestro proyecto contás con **dos interfaces web complementarias**:
+
+| Interfaz | URL | Propósito |
+|---|---|---|
+| **Omnigent Web UI** | `http://127.0.0.1:6767` | **Consola de Agentes Multi-Modal:** Ideal para interactuar en lenguaje natural con cada agente especialista por separado, auditar llamadas a herramientas paso a paso y evaluar el comportamiento de `gpt-6-luna`. |
+| **Cyber Lab Web UI** | `http://127.0.0.1:8000` | **Dashboard Científico del Experimento:** Interfaz especializada creada con FastAPI y HTML5 donde ves el flujo visual de las 5 fases en tarjetas, el botón interactivo de aprobación humana de seguridad, y las gráficas de aceleración vs baseline humano (45 min/crash vs 0.3s/crash). Se levanta ejecutando `python run.py`. |
+
+---
+
+## 5. Estructura de un Agente Omnigent (`config.yaml`)
 
 En Omnigent v0.16+, cada agente es un **directorio** que contiene un archivo `config.yaml` con la especificación `spec_version: 1`:
 
@@ -145,7 +279,7 @@ policies:
 
 ---
 
-## 5. El Gate de Aprobación Humana en Omnigent
+## 6. El Gate de Aprobación Humana en Omnigent
 
 Una de las características más importantes requeridas en la investigación científica asistida por IA es el **control humano (Human-in-the-loop)**.
 
@@ -160,7 +294,7 @@ En nuestro laboratorio:
 
 ---
 
-## 6. Comandos Útiles de Omnigent
+## 7. Comandos Útiles de Omnigent
 
 | Comando | Descripción |
 |---|---|
