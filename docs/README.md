@@ -122,7 +122,7 @@ prompt: |
 executor:
   type: omnigent
   config:
-    harness: openai
+    harness: openai-agents
   model: gpt-6-luna
 os_env:
   type: caller_process

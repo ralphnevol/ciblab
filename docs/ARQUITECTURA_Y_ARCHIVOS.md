@@ -115,11 +115,24 @@ Mucha gente confunde el **Modelo de IA** (como GPT-6 Luna) con el **Orquestador*
   3. **Permite Ejecución Autónoma:** Permite desplegar los agentes en servidores remotos o ejecutarlos localmente vía CLI.
 
 ### Cómo ejecutar los agentes en Omnigent
-Para iniciar una sesión formal de un agente dentro del runtime de Omnigent:
-```powershell
-python -m omnigent run omnigent/agents/fuzz-orchestrator/
-```
-Esto levanta el runtime de Omnigent, carga el `config.yaml`, vincula las herramientas Python registradas (`app.orchestration.fuzz_lab.start_fuzz_run`) y abre la sesión del agente.
+Tenés dos opciones equivalentes:
+
+1. **Vía el atajo automatizado (Recomendado en Windows):**
+   ```powershell
+   python run.py --omni seed-agent
+   # o para el orquestador:
+   python run.py --omni fuzz-orchestrator
+   ```
+
+2. **Vía la CLI oficial de Omnigent directa:**
+   ```powershell
+   $env:PYTHONUTF8 = 1
+   $env:PYTHONIOENCODING = "utf-8"
+   $env:OPENAI_API_KEY = (Get-Content .env | Select-String "OPENAI_API_KEY=").ToString().Split("=")[1].Trim()
+   python -m omnigent server --background
+   python -m omnigent run omnigent/agents/seed-agent/ --server http://127.0.0.1:6767
+   ```
+Ambos comandos levantan el runtime de Omnigent, cargan el `config.yaml`, vinculan las herramientas Python registradas (`app.agents.seed_agent.generate_corpus`) y abren la sesión del agente. La UI web oficial de Omnigent está disponible en `http://127.0.0.1:6767`.
 
 ---
 

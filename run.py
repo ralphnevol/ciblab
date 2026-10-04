@@ -173,8 +173,43 @@ def start_server():
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
 
 
+def run_omnigent(agent_name="seed-agent"):
+    """Launch an agent through the native Omnigent runtime."""
+    import os
+    import subprocess
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    agent_dir = f"omnigent/agents/{agent_name}"
+    if not os.path.isdir(agent_dir):
+        print(f"\n[!] Error: Agente '{agent_name}' no encontrado en omnigent/agents/")
+        print("    Agentes disponibles: seed-agent, fuzz-orchestrator, execution-agent, safety-agent, triage-agent\n")
+        return
+
+    print("\n" + "=" * 65)
+    print(f" 🚀 OMNIGENT NATIVE RUNNER — {agent_name.upper()}")
+    print("=" * 65)
+    print("[*] Levantando/verificando servidor Omnigent en http://127.0.0.1:6767...")
+    subprocess.run([sys.executable, "-m", "omnigent", "server", "--background"], env=env)
+
+    print(f"[*] Conectando sesión REPL con el agente en '{agent_dir}'...")
+    print("[*] Presioná Ctrl+C para salir de la sesión interactiva.\n")
+    subprocess.run(
+        [sys.executable, "-m", "omnigent", "run", f"{agent_dir}/", "--server", "http://127.0.0.1:6767"],
+        env=env,
+    )
+
+
 if __name__ == "__main__":
-    if "--interactive" in sys.argv or "-i" in sys.argv:
+    if "--omni" in sys.argv:
+        idx = sys.argv.index("--omni")
+        target_agent = sys.argv[idx + 1] if len(sys.argv) > idx + 1 and not sys.argv[idx + 1].startswith("-") else "seed-agent"
+        run_omnigent(target_agent)
+    elif "--interactive" in sys.argv or "-i" in sys.argv:
         run_interactive()
     elif "--demo" in sys.argv:
         run_demo()

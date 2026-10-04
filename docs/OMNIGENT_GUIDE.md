@@ -38,19 +38,49 @@ $env:PATH += ";$((Get-Item env:APPDATA).Value)\..\Local\Packages\PythonSoftwareF
 
 ---
 
-## 3. ¿Por qué `python -m omnigent run` solo pide harnesses?
+## 3. Cómo Ejecutar Agentes con `python -m omnigent run` (Directo vs Atajo)
 
-Cuando ejecutás `python -m omnigent run` **sin argumentos**, Omnigent asume que querés lanzar una sesión interactiva usando uno de los harnesses predefinidos del sistema (Claude Code, Codex, Cursor, etc.). Como estos harnesses externos requieren herramientas de terminal auxiliares (como `tmux`), el asistente interactivo te ofrece configurarlos.
+### ¿Se puede ejecutar directamente con `python -m omnigent run`?
+**SÍ, absolutamente.** Pero en Windows PowerShell hay que tener en cuenta 3 detalles del entorno para evitar errores:
 
-### La forma correcta de ejecutar agentes de proyecto:
-Para ejecutar un agente personalizado, **debés pasarle la ruta de su directorio**:
+1. **Codificación UTF-8 (Bug de `cp1252`):** El demonio de túnel de Omnigent imprime el símbolo `✓` (`\u2713`). Si la consola usa la codificación tradicional de Windows (`cp1252`), Python crashea internamente y el túnel se desconecta arrojando:
+   `Error: The connect daemon for host did not come online within 30s`.
+2. **Credenciales en el entorno:** Omnigent lee `OPENAI_API_KEY` directamente de las variables del proceso de PowerShell (no lee archivos `.env` automáticamente).
+3. **Servidor en background:** Para evitar timeouts al arrancar, se debe iniciar primero el servidor local con `server --background` o pasar `--server http://127.0.0.1:6767`.
+
+### El comando directo completo en PowerShell:
 ```powershell
-python -m omnigent run omnigent/agents/fuzz-orchestrator/
+# 1. Configurar encoding y cargar credenciales en la sesión
+$env:PYTHONUTF8 = 1
+$env:PYTHONIOENCODING = "utf-8"
+$env:OPENAI_API_KEY = (Get-Content .env | Select-String "OPENAI_API_KEY=").ToString().Split("=")[1].Trim()
+
+# 2. Iniciar el servidor local en segundo plano (si no está corriendo)
+python -m omnigent server --background
+
+# 3. Ejecutar el agente directamente con la CLI oficial de Omnigent
+python -m omnigent run omnigent/agents/seed-agent/ --server http://127.0.0.1:6767
 ```
-O con un prompt inicial:
+
+---
+
+### La Alternativa Rápida (Atajo en `run.py`)
+Para que no tengas que escribir esas 4 líneas de configuración de variables en cada terminal, creamos el atajo:
 ```powershell
-python -m omnigent run omnigent/agents/fuzz-orchestrator/ -p "Inicia el experimento de fuzzing en el parser"
+python run.py --omni seed-agent
 ```
+o para el orquestador principal:
+```powershell
+python run.py --omni fuzz-orchestrator
+```
+Este comando hace exactamente lo mismo por debajo: inyecta el UTF-8, carga tu clave de `.env`, levanta el servidor y conecta la sesión interactiva con Omnigent.
+
+---
+
+### Ver la Sesión en la Interfaz Gráfica Oficial de Omnigent
+Cuando el servidor de Omnigent está corriendo, podés abrir en tu navegador:
+👉 **`http://127.0.0.1:6767`**
+Ahí vas a ver la UI oficial de Omnigent con las sesiones activas, las herramientas invocadas y los logs en tiempo real.
 
 ---
 
@@ -83,7 +113,7 @@ prompt: |
 executor:
   type: omnigent
   config:
-    harness: openai
+    harness: openai-agents
   model: gpt-6-luna
 
 os_env:
