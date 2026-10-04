@@ -14,6 +14,11 @@ Bienvenido a la documentación oficial del **Cyber Research Lab (ciblab)**. Este
 7. [Referencia de la API REST](#7-referencia-de-la-api-rest)
 8. [Métricas de Aceleración y Rigor Científico](#8-métricas-de-aceleración-y-rigor-científico)
 
+> 🚀 **Guías Rápidas por Sistema Operativo:**
+> * 🪟 [**Guía Rápida para Windows (CLI y Web UI sin tocar PATH)**](GUIA_WINDOWS.md)
+> * 🍎🐧 [**Guía Rápida para macOS y Linux (CLI y Web UI nativos)**](GUIA_MAC_LINUX.md)
+> * 📘 [**Manual Completo de Omnigent**](OMNIGENT_GUIDE.md)
+
 ---
 
 ## 1. Visión General y Propósito
