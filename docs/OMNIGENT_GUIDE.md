@@ -125,10 +125,10 @@ En macOS/Linux el REPL interactivo abrirá de inmediato la sesión con **GPT-6 L
 Cuando termines de trabajar y quieras liberar el puerto `6767`:
 ```bash
 # Opción A: Detener el servidor en segundo plano y su demonio host
-omni server stop
+python -m omnigent server stop
 
 # Opción B: Detener absolutamente todos los procesos de Omnigent activos
-omni stop
+python -m omnigent stop
 ```
 *(Si no tenés el alias en el PATH: `python3 -m omnigent server stop`)*.
 
