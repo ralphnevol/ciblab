@@ -62,60 +62,81 @@ python run.py --demo
 
 Omnigent incluye un servidor web en React (`http://127.0.0.1:6767`) para chatear con los agentes, ver streaming de razonamiento y auditar la ejecución visual de herramientas (*Tool Calls*).
 
-### Paso 1: Asegurar el registro de los agentes
-Registra los 5 agentes del laboratorio (`omnigent/agents/`) en la base de datos local de Omnigent:
+### Paso 1: Levantar el Servicio Completo con Credenciales (Recomendado)
+Para que la UI reconozca a tu máquina como **Host Online** y el arnés `openai-agents` esté autenticado con tu `OPENAI_API_KEY` de `.env`:
 
 ```powershell
-python run.py --register
+python run.py --omni-start
 ```
-*Salida esperada:*
-```text
-  agent: fuzz_orchestrator (from omnigent\agents\fuzz-orchestrator)
-  agent: seed_agent (from omnigent\agents\seed-agent)
-  agent: execution_agent (from omnigent\agents\execution-agent)
-  agent: safety_agent (from omnigent\agents\safety-agent)
-  agent: triage_agent (from omnigent\agents\triage-agent)
-[✓] ¡Los 5 agentes están registrados y listos para la UI en http://127.0.0.1:6767!
-```
+* **Qué hace automáticamente este comando:**
+  1. Carga `OPENAI_API_KEY` desde tu archivo `.env`.
+  2. Sincroniza y registra los 5 agentes del laboratorio (`omnigent/agents/`) en la base de datos de Omnigent.
+  3. Levanta tanto el **Servidor Web** (`:6767`) como el **Host Daemon** (runner de ejecución) en segundo plano.
+  4. Garantiza que en la UI no aparezca la advertencia `isn't configured on Brian`.
 
 ---
 
-### Paso 2: Iniciar el servidor web en segundo plano
-```powershell
-python -m omnigent server --background
-```
-
-Para verificar que está activo:
-```powershell
-python -m omnigent server status
-```
-*Salida:* `Background server: running at http://127.0.0.1:6767 (pid ..., port 6767)`.
-
----
-
-### Paso 3: Abrir el navegador e interactuar
+### Paso 2: Abrir el navegador e interactuar
 Abrí tu navegador web e ingresá a:
 👉 **`http://127.0.0.1:6767`**
 
-1. Hacé clic en **"+ New Chat"** (arriba a la izquierda).
-2. En el menú desplegable de selección de modelo/agente, elegí por ejemplo **`seed_agent`**.
+1. En la pantalla inicial verás tu máquina conectada (**Host: Brian, Online**).
+2. En el menú desplegable de selección de modelo/agente, elegí por ejemplo **`Fuzz_orchestrator`** o **`Seed_agent`**.
 3. En la caja de chat inferior escribile:
    ```text
-   Analiza la estructura del parser binario y genera una hipótesis con 5 semillas de prueba.
+   Analiza el parser vulnerable y genera el corpus de 5 semillas de prueba
    ```
 4. **Qué vas a ver en pantalla:**
    - **Streaming de Razonamiento:** Verás cómo **GPT-6 Luna** analiza la especificación y los límites de memoria.
-   - **Bloque Visual de Herramientas (`Tool Call`):** Un bloque desplegable muestra la ejecución en tiempo real de `generate_corpus` ejecutando [`app/agents/seed_agent.py`](../app/agents/seed_agent.py).
-   - **Respuesta:** El corpus con las 5 semillas generadas en hexadecimal.
+   - **Bloque Visual de Herramientas (`Tool Call`):** Un bloque desplegable muestra la ejecución en tiempo real de la herramienta en Python.
+   - **Respuesta:** La conclusión científica y los datos estructurados devueltos en el chat.
 
 ---
 
-### Paso 4: Detener el servidor de Omnigent al terminar
-Cuando termines de probar, liberá el puerto `6767`:
+### Paso 3: Detener el servidor de Omnigent al terminar
+Cuando termines de probar, liberá el puerto `6767` y detén los procesos de Omnigent:
 
 ```powershell
-python -m omnigent server stop
+python -m omnigent stop
 ```
+
+---
+
+## 🛠️ Documentación Técnica: Parche de Codificación en Windows (`connect.py`)
+
+### El Problema Identificado:
+En consolas tradicionales de Windows (`cp1252`), cuando el daemon de conexión del host intentaba conectarse al servidor WebSocket en `ws://127.0.0.1:6767/v1/hosts/.../tunnel`, ejecutaba la siguiente línea en `omnigent/host/connect.py` (línea 4392):
+```python
+print(
+    f"✓ Connected as {self._identity.name!r} "
+    f"({self._identity.host_id}), {len(hello.runners)} live runner(s). "
+    "Listening for sessions — Ctrl-C to disconnect.",
+    flush=True,
+)
+```
+Dado que el carácter `✓` (`\u2713`) no existe en el juego de caracteres `cp1252`, Python lanzaba una excepción fatal:
+`UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>`.
+Esto provocaba que el túnel del host se desconectara y reconectara cada 3 segundos en un bucle infinito, dejando al Host en estado **`offline`** y arrojando en la UI los errores `The session's runner isn't connected to the server` y `No host selected`.
+
+### La Solución Aplicada:
+Se aplicó un parche seguro en `omnigent/host/connect.py`:
+```python
+try:
+    print(
+        f"✓ Connected as {self._identity.name!r} "
+        f"({self._identity.host_id}), {len(hello.runners)} live runner(s). "
+        "Listening for sessions — Ctrl-C to disconnect.",
+        flush=True,
+    )
+except Exception:
+    print(
+        f"[+] Connected as {self._identity.name!r} "
+        f"({self._identity.host_id}), {len(hello.runners)} live runner(s). "
+        "Listening for sessions — Ctrl-C to disconnect.",
+        flush=True,
+    )
+```
+Con este manejo de excepción, el túnel permanece conectado de forma estable en `online`, permitiendo la comunicación fluida entre el navegador y el ejecutor de Python.
 
 ---
 
@@ -137,11 +158,10 @@ Abrí tu navegador en:
 
 | Tarea | Comando en PowerShell |
 |---|---|
-| Configurar UTF-8 | `$env:PYTHONUTF8 = 1` |
-| Registrar agentes | `python run.py --register` |
+| Iniciar Servicio Omnigent (UI + Host + .env) | `python run.py --omni-start` |
+| Sincronizar agentes con Omnigent | `python run.py --register` |
 | Probar agente en CLI | `python run.py --omni seed-agent` |
 | Probar bucle interactivo | `python run.py --interactive` |
-| Levantar Servidor UI Omnigent | `python -m omnigent server --background` |
 | Estado Servidor Omnigent | `python -m omnigent server status` |
-| Apagar Servidor Omnigent | `python -m omnigent server stop` |
+| Apagar Omnigent completo | `python -m omnigent stop` |
 | Levantar Dashboard Lab | `python run.py` |

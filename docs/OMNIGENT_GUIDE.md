@@ -167,12 +167,13 @@ omni server --agent omnigent/agents/fuzz-orchestrator/ \
             --background
 ```
 
-**En Windows (PowerShell):**
+**En Windows (PowerShell - Recomendado con carga automática de credenciales):**
 ```powershell
-python -m omnigent server --agent omnigent/agents/fuzz-orchestrator/ --agent omnigent/agents/seed-agent/ --agent omnigent/agents/execution-agent/ --agent omnigent/agents/safety-agent/ --agent omnigent/agents/triage-agent/ --background
+python run.py --omni-start
 ```
+*(Alternativa directa: `python -m omnigent start`)*.
 
-*(Si necesitás reiniciar el servidor para recargar cambios: ejecutá `omni server stop` o `python -m omnigent server stop` y luego volvé a ejecutar el comando de arriba).*
+*(Si necesitás reiniciar el servicio para recargar cambios: ejecutá `omni stop` o `python -m omnigent stop` y luego volvé a ejecutar el comando de arriba).*
 
 ---
 
@@ -364,3 +365,45 @@ En nuestro laboratorio:
 | `python -m omnigent doctor` | Diagnostica el estado del entorno de Omnigent y verifica harnesses disponibles. |
 | `python -m omnigent session list` | Lista las conversaciones y ejecuciones activas. |
 | `python -m omnigent usage` | Muestra el consumo de tokens y llamadas por sesión. |
+
+---
+
+## 8. Documentación Técnica: Parche de Codificación en Windows (`connect.py`)
+
+### Diagnóstico del Error Upstream:
+En sistemas operativos Windows donde el juego de caracteres por defecto es `cp1252`, el demonio de conexión del host intentaba conectarse al servidor WebSocket en `ws://127.0.0.1:6767/v1/hosts/.../tunnel`. Al establecer el enlace, ejecutaba la siguiente línea en `omnigent/host/connect.py` (línea 4392):
+
+```python
+print(
+    f"✓ Connected as {self._identity.name!r} "
+    f"({self._identity.host_id}), {len(hello.runners)} live runner(s). "
+    "Listening for sessions — Ctrl-C to disconnect.",
+    flush=True,
+)
+```
+
+Debido a que el glifo `✓` (`\u2713`) no tiene mapeo en la tabla `cp1252`, Python arrojaba:
+```text
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>
+```
+Esto causaba que el túnel se desconectara inmediatamente, reintentando cada 3 segundos y dejando al host en estado `offline` permanente.
+
+### Parche Aplicado:
+Se envolvió la llamada en un bloque seguro:
+```python
+try:
+    print(
+        f"✓ Connected as {self._identity.name!r} "
+        f"({self._identity.host_id}), {len(hello.runners)} live runner(s). "
+        "Listening for sessions — Ctrl-C to disconnect.",
+        flush=True,
+    )
+except Exception:
+    print(
+        f"[+] Connected as {self._identity.name!r} "
+        f"({self._identity.host_id}), {len(hello.runners)} live runner(s). "
+        "Listening for sessions — Ctrl-C to disconnect.",
+        flush=True,
+    )
+```
+Esto asegura estabilidad permanente del host daemon en Windows tanto en primer plano como en segundo plano.

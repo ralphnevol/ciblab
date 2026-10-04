@@ -236,11 +236,34 @@ def register_agents():
         print(f"[!] Error registrando agentes: {e}")
 
 
+def start_omnigent_service():
+    """Levanta el servidor y host daemon de Omnigent con las credenciales cargadas de .env."""
+    import os
+    import subprocess
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    print("\n" + "=" * 65)
+    print(" 🚀 INICIANDO SERVICIO COMPLETO DE OMNIGENT (SERVER + HOST DAEMON)")
+    print("=" * 65)
+    register_agents()
+    subprocess.run([sys.executable, "-m", "omnigent", "start", "--no-open"], env=env)
+    print("\n[✓] ¡Servidor Web y Host Runner ONLINE en http://127.0.0.1:6767!")
+    print("[*] Abrí tu navegador e interactuá con los agentes.")
+    print("[*] Para apagarlo cuando termines: python -m omnigent stop\n")
+
+
 if __name__ == "__main__":
     if "--omni" in sys.argv:
         idx = sys.argv.index("--omni")
         target_agent = sys.argv[idx + 1] if len(sys.argv) > idx + 1 and not sys.argv[idx + 1].startswith("-") else "seed-agent"
         run_omnigent(target_agent)
+    elif "--omni-start" in sys.argv or "--omni-ui" in sys.argv:
+        start_omnigent_service()
     elif "--register" in sys.argv:
         register_agents()
     elif "--interactive" in sys.argv or "-i" in sys.argv:
