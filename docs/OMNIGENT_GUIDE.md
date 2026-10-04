@@ -121,6 +121,23 @@ omni run omnigent/agents/seed-agent/
 ```
 En macOS/Linux el REPL interactivo abrirá de inmediato la sesión con **GPT-6 Luna**, mostrando el prompt del agente y esperando tus órdenes.
 
+##### 4. Cómo Apagar / Detener el Servidor en macOS y Linux
+Cuando termines de trabajar y quieras liberar el puerto `6767`:
+```bash
+# Opción A: Detener el servidor en segundo plano y su demonio host
+omni server stop
+
+# Opción B: Detener absolutamente todos los procesos de Omnigent activos
+omni stop
+```
+*(Si no tenés el alias en el PATH: `python3 -m omnigent server stop`)*.
+
+Para confirmar que se apagó correctamente:
+```bash
+omni server status
+# Salida esperada: No background server is running.
+```
+
 ---
 
 ### La Alternativa Rápida Multiplataforma (Atajo en `run.py`)
@@ -218,6 +235,47 @@ En nuestro proyecto contás con **dos interfaces web complementarias**:
 
 ---
 
+### Paso 5: Cómo Apagar el Servidor de Omnigent al Finalizar
+
+Cuando termines tu sesión de pruebas o quieras reiniciar el servidor para recargar configuraciones, tenés dos formas según tu sistema operativo:
+
+#### En macOS y Linux:
+```bash
+# Opción 1: Detener el servidor web en background y el host daemon
+omni server stop
+
+# Opción 2: Detener absolutamente todos los procesos de Omnigent
+omni stop
+```
+*(O con `python3 -m omnigent server stop`)*.
+
+#### En Windows (PowerShell):
+```powershell
+# Opción 1: Detener el servidor web en background
+python -m omnigent server stop
+
+# Opción 2: Detener todos los procesos de Omnigent activos
+python -m omnigent stop
+```
+
+#### Si lo levantaste en primer plano (Foreground):
+Si levantaste el servidor sin la bandera `--background`, simplemente presioná:
+```text
+Ctrl + C
+```
+
+Para verificar que el puerto `6767` quedó libre:
+```bash
+# macOS / Linux:
+omni server status
+
+# Windows:
+python -m omnigent server status
+# Salida esperada: No background server is running.
+```
+
+---
+
 ## 5. Estructura de un Agente Omnigent (`config.yaml`)
 
 En Omnigent v0.16+, cada agente es un **directorio** que contiene un archivo `config.yaml` con la especificación `spec_version: 1`:
@@ -298,8 +356,11 @@ En nuestro laboratorio:
 
 | Comando | Descripción |
 |---|---|
-| `python -m omnigent doctor` | Diagnostica el estado del entorno de Omnigent y verifica harnesses disponibles. |
+| `python -m omnigent server --background` | Inicia el servidor central de Omnigent en segundo plano en el puerto `6767`. |
+| `python -m omnigent server status` | Informa si el servidor de fondo está corriendo, su PID y puerto. |
+| `python -m omnigent server stop` | **Apaga y detiene el servidor de fondo de Omnigent y su demonio host.** |
+| `python -m omnigent stop` | **Detiene todos los procesos y ejecutores activos de Omnigent en la máquina.** |
 | `python -m omnigent run <directorio>` | Ejecuta un agente local a partir de su `config.yaml`. |
-| `python -m omnigent server` | Inicia el servidor central de Omnigent en segundo plano. |
+| `python -m omnigent doctor` | Diagnostica el estado del entorno de Omnigent y verifica harnesses disponibles. |
 | `python -m omnigent session list` | Lista las conversaciones y ejecuciones activas. |
 | `python -m omnigent usage` | Muestra el consumo de tokens y llamadas por sesión. |

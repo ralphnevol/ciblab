@@ -78,6 +78,11 @@ Abrí tu navegador en:
 
 *En la UI hacé clic en **"+ New Chat"**, seleccioná `seed_agent` o `fuzz_orchestrator` e interactuá en lenguaje natural.*
 
+Para apagar el servidor al terminar:
+```bash
+python -m omnigent server stop
+```
+
 ---
 
 ### Opción 4: Ejecución en macOS y Linux (Bash / Zsh)
@@ -91,6 +96,9 @@ omni server --agent omnigent/agents/fuzz-orchestrator/ --agent omnigent/agents/s
 
 # 3. O ejecutar por consola directamente:
 omni run omnigent/agents/seed-agent/
+
+# 4. Apagar el servidor al finalizar:
+omni server stop
 ```
 *(Ver la guía completa en [`docs/OMNIGENT_GUIDE.md`](OMNIGENT_GUIDE.md)).*
 
