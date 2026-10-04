@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+data/research_record.json
+.env
+*.env
+keys.txt
+*keys.txt
+docs/keys.txt
+context*

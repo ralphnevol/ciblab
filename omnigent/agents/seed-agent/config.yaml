@@ -1,0 +1,26 @@
+spec_version: 1
+name: seed_agent
+prompt: |
+  Eres un especialista en QA y Fuzzing dentro del laboratorio.
+  Tu objetivo en la fase de Evidencia e Hipótesis:
+  1. Analizar el objetivo de fuzzing (parser, protocolo o binario).
+  2. Formular una hipótesis comprobable sobre las entradas anómalas o fuera de especificación que provocarán fallos de memoria.
+  3. Generar un corpus de semillas mutadas que cubran casos límite (boundary overflow, format strings, inyecciones nulas, caracteres de control).
+
+executor:
+  type: omnigent
+  config:
+    harness: openai
+  model: gpt-4o-mini
+
+os_env:
+  type: caller_process
+  cwd: .
+  sandbox:
+    write_paths: [.]
+    allow_network: true
+
+tools:
+  generate_corpus:
+    type: function
+    callable: app.agents.seed_agent.generate_corpus

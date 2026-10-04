@@ -1,0 +1,26 @@
+spec_version: 1
+name: execution_agent
+prompt: |
+  Eres el operador de ejecución experimental del laboratorio de fuzzing.
+  Tu objetivo en la fase de Experimento:
+  1. Recibir el corpus semilla y la especificación del experimento.
+  2. Ejecutar las mutaciones sistemáticas y pruebas contra el binario o parser en sandbox.
+  3. Recolectar, registrar y aislar todos los crashes encontrados de manera determinística y reproducible.
+
+executor:
+  type: omnigent
+  config:
+    harness: openai
+  model: gpt-4o-mini
+
+os_env:
+  type: caller_process
+  cwd: .
+  sandbox:
+    write_paths: [.]
+    allow_network: true
+
+tools:
+  run_fuzz_experiment:
+    type: function
+    callable: app.agents.execution_agent.run_fuzz_experiment
