@@ -27,15 +27,18 @@ def manual_baseline() -> list[ManualBaselineResult]:
 
 
 def evaluate_latest() -> EvaluationResult | None:
-    if not RUNS:
+    runs = [run for run in RUNS.values() if run.decisions]
+    if not runs:
         return None
-    run = list(RUNS.values())[-1]
+    run = runs[-1]
     gt = load_labels_for_evaluation()
     labels = [Decision.KEEP.value, Decision.DECOMMISSION.value, Decision.INVESTIGATE.value]
     matrix = {r: {c: 0 for c in labels} for r in labels}
     total = 0
     correct = 0
     for did, true_label in gt.items():
+        if did not in run.decisions:
+            continue
         pred = run.decisions[did].decision.value
         matrix[true_label][pred] += 1
         correct += int(true_label == pred)
@@ -43,7 +46,7 @@ def evaluate_latest() -> EvaluationResult | None:
     run_seconds = max(1e-6, max((e.timestamp.timestamp() for e in run.events)) - min((e.timestamp.timestamp() for e in run.events)))
     lab_tpd = run_seconds / total
     baseline = manual_baseline()
-    base_tpd = sum(b.duration_seconds for b in baseline) / len(baseline)
+    base_tpd = sum(b.duration_seconds for b in baseline) / len(baseline) if baseline else 0.0
     adaptations = Counter((e.action for e in run.events))["ADAPTATION_EVENT"]
     return EvaluationResult(
         accuracy=round(correct / total, 4),
@@ -59,7 +62,7 @@ def evaluate_latest() -> EvaluationResult | None:
 
 def _reproducible(decisions: dict) -> bool:
     snapshot = {k: v.decision.value for k, v in sorted(decisions.items())}
-    return bool(snapshot) and len(snapshot) == 18
+    return bool(snapshot)
 
 
 def sealed_labels_hash() -> str:

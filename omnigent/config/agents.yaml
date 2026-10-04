@@ -3,6 +3,12 @@ orchestration:
   provider: omnigent
   fallback: local
 agents:
+  - name: research
+    inputs: [ResearchQuestion, Evidence]
+    outputs: [ResearchPlan]
+  - name: hypothesis
+    inputs: [Evidence]
+    outputs: [Hypothesis]
   - name: literature
     inputs: [Detection]
     outputs: [LiteratureEvidence]
@@ -24,3 +30,10 @@ agents:
   - name: safety
     inputs: [PortfolioDecision]
     outputs: [SafetyDecision]
+tools:
+  - name: mitre_adapter
+    data_boundary: public
+  - name: literature_adapter
+    data_boundary: public
+  - name: binary_analysis_adapter
+    data_boundary: synthetic

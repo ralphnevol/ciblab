@@ -6,7 +6,8 @@ from app.agents.safety import validate_safety
 from app.experiments.synthetic_generator import generate_dataset
 from app.main import app
 from app.models.schemas import DetectionScorecard
-from app.orchestration.lab import execute_run, get_run
+from app.orchestration.lab import execute_research_case, execute_run, get_run
+from app.storage.research_store import STORE
 from app.services.data_store import load_detections, sealed_hash
 
 
@@ -57,3 +58,21 @@ def test_api_health_and_run_and_hash():
     assert run["sealed_ground_truth_hash"] == sealed_hash()
     ev = c.get("/evaluation")
     assert ev.status_code == 200
+
+
+def test_research_loop_has_tools_and_adapts():
+    run_id = execute_research_case("Does timing change the parser result?", seed=42, case_id="CASE-TEST")
+    run = get_run(run_id)
+    actions = [event.action for event in run.events]
+    assert "evidence_collected" in actions
+    assert "candidates_selected" in actions
+    assert "ADAPTATION_EVENT" in actions
+    assert STORE.timeline("CASE-TEST")[-1].action == "updated_decision"
+
+
+def test_research_experiment_is_reproducible():
+    first = execute_research_case("Is the result reproducible?", seed=7, case_id="CASE-REPRO-1")
+    second = execute_research_case("Is the result reproducible?", seed=7, case_id="CASE-REPRO-2")
+    first_execute = [event for event in get_run(first).events if event.action == "execute"]
+    second_execute = [event for event in get_run(second).events if event.action == "execute"]
+    assert [event.output["metrics"] for event in first_execute] == [event.output["metrics"] for event in second_execute]

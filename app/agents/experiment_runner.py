@@ -22,3 +22,20 @@ def run_experiment(run_id: str, spec: ExperimentSpec) -> ExperimentResult:
         raw_results=metric,
         execution_time=time.perf_counter() - t0,
     )
+
+
+def run_research_experiment(run_id: str, case_id: str, experiment_id: str, seed: int, parameters: dict) -> ExperimentResult:
+    t0 = time.perf_counter()
+    variant = parameters.get("variant", "stable_timing")
+    dataset = generate_dataset(seed, "D03", "baseline" if variant == "stable_timing" else "adapted")
+    metric = evaluate_detection("D03", dataset)
+    return ExperimentResult(
+        run_id=run_id,
+        detection_id=case_id,
+        experiment_type=experiment_id,
+        random_seed=seed,
+        parameters=parameters,
+        metrics={"score": metric["score"]},
+        raw_results=metric,
+        execution_time=time.perf_counter() - t0,
+    )

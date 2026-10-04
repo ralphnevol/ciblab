@@ -4,6 +4,8 @@ allow:
   - public_research
   - rule_evaluation
   - metrics_calculation
+  - synthetic_binary_analysis
+  - human_approval_recording
 require_human:
   - decommission
 block:

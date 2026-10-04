@@ -1,15 +1,18 @@
-# Detection Triage Lab (MVP)
+# Cyber Research Lab (MVP)
 
 ## 1) Problem & Scientific Question
-How should a detection portfolio be evaluated as falsifiable hypotheses under explicit uncertainty, budget constraints, and adaptive adversarial pressure?
+How can a research lab move reproducibly from a research question to evidence, hypotheses, experiments, results, and an updated decision?
 
 ## 2) Architecture
 - FastAPI API/UI shell
 - Deterministic multi-agent orchestration loop
 - Omnigent integration adapter (`native` when installed, `local_fallback` otherwise)
 - Event-oriented shared research record
+- Synthetic/public binary-research vertical slice
 
 ## 3) Agent Architecture
+- Research
+- Hypothesis
 - Literature
 - Evaluation Planner (gain/cost budgeted selection)
 - Experiment Runner
@@ -21,8 +24,8 @@ How should a detection portfolio be evaluated as falsifiable hypotheses under ex
 ## 4) Data Model
 Strict Pydantic schemas in `app/models/schemas.py` for Detection, LiteratureEvidence, ExperimentSpec/Result, Scorecard, RobustnessResult, PlannerDecision, PortfolioDecision, SafetyDecision, ResearchEvent, ManualBaselineResult, EvaluationResult.
 
-## 5) Detection Portfolio
-18 seeded synthetic detections in `data/detections/detections.json`.
+## 5) MVP Vertical
+The primary demo investigates `synthetic-binary-01`. Public literature, MITRE, and binary findings are tools that emit typed evidence; agents interpret that evidence and plan safe experiments. The original 18-detection portfolio remains available as a D03 compatibility regression scenario.
 
 ## 6) Experiment Methodology
 - Deterministic synthetic data (`seed`, generator version, parameters, dataset_id)
@@ -58,21 +61,31 @@ uvicorn app.main:app --reload
 Agent/policy definitions live under `omnigent/`. Runtime detection is exposed in `GET /health`.
 
 ## 11) Running the MVP
+1. `POST /research-runs?question=Does%20timing%20change%20the%20parser%20result%3F&seed=42`
+2. `GET /runs/{run_id}/events`
+3. `GET /cases/CASE-001/research-record`
+4. Observe `candidates_selected` followed by `ADAPTATION_EVENT`.
+
+## 12) Running the compatibility scenario
 1. `POST /runs`
 2. `GET /runs/{run_id}`
 3. `GET /runs/{run_id}/events`
 4. `GET /detections/D03/timeline`
 
-## 12) Running Evaluation
+## 13) Running Evaluation
 - `GET /evaluation`
 - `GET /metrics`
 
-## 13) Running Tests
+## 14) Running Tests
 ```bash
 pytest
 ```
 
-## 14) API
+## 15) API
+- `GET /cases`
+- `POST /cases`
+- `GET /cases/{case_id}`
+- `POST /research-runs`
 - `GET /health`
 - `GET /detections`
 - `GET /detections/{id}`
@@ -85,15 +98,15 @@ pytest
 - `POST /approvals/{decision_id}`
 - `GET /research-record/{detection_id}`
 
-## 15) Demo Walkthrough
-For D03: baseline appears strong, red-team timing randomization degrades performance, planner emits `ADAPTATION_EVENT`, final decision remains explicitly evidence-driven (`INVESTIGATE`).
+## 16) Demo Walkthrough
+The primary demo proposes two experiments, executes the selected stable-timing test, observes a new timing uncertainty, and changes the next planner selection to randomized timing. The D03 compatibility scenario separately demonstrates adaptive robustness degradation.
 
-## 16) Known Limitations
+## 17) Known Limitations
 - Lightweight local evidence adapter (no full RAG/graph pipeline yet)
 - Omnigent adapter path + local fallback; native runtime depends on environment
 - UI is intentionally minimal for hackathon reliability
 
-## 17) Path to Scale
+## 18) Path to Scale
 - Swap storage/event backend to PostgreSQL/Elasticsearch
 - Replace heuristic literature/planner reasoning with provider-backed LLM adapters
 - Expand calibration/quality scoring and governance policy enforcement depth

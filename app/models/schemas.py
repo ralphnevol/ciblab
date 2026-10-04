@@ -34,6 +34,45 @@ class Detection(BaseModel):
     expected_behaviour: str
 
 
+class ResearchQuestion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    case_id: str
+    question: str
+    target: str
+    constraints: list[str] = Field(default_factory=list)
+
+
+class ResearchCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    case_id: str
+    title: str
+    question: ResearchQuestion
+    scenario: str = "synthetic-binary-01"
+    status: Literal["created", "running", "completed", "blocked"] = "created"
+
+
+class Evidence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    evidence_id: str
+    case_id: str
+    kind: Literal["cti", "literature", "binary_finding", "local"]
+    claim: str
+    source: str
+    citation: str
+    confidence: float = Field(ge=0, le=1)
+    tool: str
+
+
+class Hypothesis(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    hypothesis_id: str
+    case_id: str
+    statement: str
+    evidence_refs: list[str]
+    confidence: float = Field(ge=0, le=1)
+    unknowns: list[str]
+
+
 class LiteratureEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
     detection_id: str
@@ -59,6 +98,30 @@ class ExperimentSpec(BaseModel):
     ]
     random_seed: int
     parameters: dict[str, Any] = Field(default_factory=dict)
+
+
+class ExperimentCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    experiment_id: str
+    case_id: str
+    hypothesis_refs: list[str]
+    expected_learning: float
+    cost: int
+    feasibility: float = Field(ge=0, le=1)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+
+    @property
+    def priority(self) -> float:
+        return self.expected_learning * self.feasibility / max(1, self.cost)
+
+
+class ResearchDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    case_id: str
+    selected_experiment: str | None
+    rationale: str
+    updated_uncertainties: list[str] = Field(default_factory=list)
+    requires_human_approval: bool = False
 
 
 class ExperimentResult(BaseModel):
@@ -136,7 +199,8 @@ class ResearchEvent(BaseModel):
     model_config = ConfigDict(extra="forbid")
     event_id: str
     timestamp: datetime = Field(default_factory=utcnow)
-    detection_id: str
+    detection_id: str = ""
+    case_id: str | None = None
     agent: str
     action: str
     input_reference: str

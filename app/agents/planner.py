@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.models.schemas import PlannerDecision
+from app.models.schemas import ExperimentCandidate, PlannerDecision
 
 TEST_COSTS = {
     "literature_check": 1,
@@ -10,6 +10,35 @@ TEST_COSTS = {
     "redundancy_check": 2,
     "robustness_test": 4,
 }
+
+
+def propose_candidates(case_id: str, hypothesis_ids: list[str]) -> list[ExperimentCandidate]:
+    return [
+        ExperimentCandidate(
+            experiment_id=f"{case_id}-EXP-A",
+            case_id=case_id,
+            hypothesis_refs=hypothesis_ids[:1],
+            expected_learning=0.72,
+            cost=3,
+            feasibility=0.9,
+            parameters={"variant": "stable_timing"},
+        ),
+        ExperimentCandidate(
+            experiment_id=f"{case_id}-EXP-B",
+            case_id=case_id,
+            hypothesis_refs=hypothesis_ids[1:2] or hypothesis_ids[:1],
+            expected_learning=0.91,
+            cost=4,
+            feasibility=0.8,
+            parameters={"variant": "randomized_timing"},
+        ),
+    ]
+
+
+def select_candidate(candidates: list[ExperimentCandidate]) -> ExperimentCandidate:
+    if len(candidates) < 2:
+        raise ValueError("at least two experiment candidates are required")
+    return max(candidates, key=lambda candidate: (candidate.priority, candidate.experiment_id))
 
 
 def select_test(remaining_budget: int, uncertainty: float, last_result: dict | None, d03_adapted: bool) -> PlannerDecision:
