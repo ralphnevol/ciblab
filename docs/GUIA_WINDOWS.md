@@ -22,22 +22,22 @@ $env:PYTHONUTF8 = 1
 
 Podés interactuar directamente con los agentes desde la consola con lenguaje natural.
 
-### Opción A: Sesión interactiva con un agente especialista (Atajo Oficial)
-Levanta el agente en el runtime oficial de Omnigent conectado a **GPT-6 Luna**:
+### Opción A: Sesión NATIVA con Omnigent CLI (Usa el Runtime de Omnigent)
+Esta opción **SÍ corre a través del runtime oficial de Omnigent**, levantando el servidor en `:6767`, cargando el arnés `openai-agents` y conectando el agente a **GPT-6 Luna**:
 
 ```powershell
 # Probar el Seed Agent (genera hipótesis y corpus de semillas de fuzzing):
 python run.py --omni seed-agent
 
-# O probar el Fuzz Orchestrator (Investigador Principal):
+# O probar el Fuzz Orchestrator (Investigador Principal que coordina todo el ciclo):
 python run.py --omni fuzz-orchestrator
 ```
 * Presioná `Ctrl + C` para salir de la sesión interactiva.
 
 ---
 
-### Opción B: Demostración Científica Paso a Paso (Human-in-the-Loop)
-Si querés ver el ciclo científico completo con pausas interactivas y control de seguridad:
+### Opción B: Demostración en Python Directo (Local Fallback — Sin demonio de Omnigent)
+> ⚠️ **Atención:** Esta opción **NO pasa por el servidor ni los sockets de Omnigent**. Es una ejecución en Python puro (lo que en la arquitectura llamamos *Local Fallback Execution*). Llama a **GPT-6 Luna** en vivo vía OpenAI API y replica el flujo científico en tu consola, ideal para depurar código o probar si no querés levantar el servidor de Omnigent.
 
 ```powershell
 python run.py --interactive
@@ -46,12 +46,12 @@ python run.py --interactive
   1. Envía la especificación del parser al Seed Agent (`gpt-6-luna`).
   2. Formula la hipótesis y genera 5 semillas de mutación.
   3. Ejecuta el experimento en sandbox detectando más de 30 crashes.
-  4. **Pausa de Seguridad (Omnigent Policy):** Te solicita aprobación por teclado (`[S/n]`).
+  4. **Pausa de Seguridad:** Te solicita aprobación por teclado (`[S/n]`) emulando la política de Omnigent.
   5. Reproduce fallos, clasifica vulnerabilidades por CWE (CWE-120, CWE-134, CWE-626) y actualiza la decisión científica con métricas de aceleración.
 
 ---
 
-### Opción C: Test Rápido Automatizado (1 comando)
+### Opción C: Test Rápido Automatizado (Local Fallback)
 ```powershell
 python run.py --demo
 ```

@@ -27,15 +27,15 @@ echo "API Key configurada: ${OPENAI_API_KEY:0:10}..."
 
 Podés ejecutar los agentes directamente en la consola con lenguaje natural.
 
-### Opción A: Sesión interactiva con un agente especialista
-Conecta una sesión REPL directa con el runtime de Omnigent y **GPT-6 Luna**:
+### Opción A: Sesión NATIVA con Omnigent CLI (Usa el Runtime de Omnigent)
+Esta opción **SÍ corre a través del runtime oficial de Omnigent**, levantando el servidor en `:6767`, cargando el arnés `openai-agents` y conectando el agente a **GPT-6 Luna**:
 
 ```bash
 # Probar el Seed Agent (genera hipótesis y corpus de semillas de fuzzing):
 python3 run.py --omni seed-agent
 # (O comando nativo: omni run omnigent/agents/seed-agent/)
 
-# O probar el Fuzz Orchestrator (Investigador Principal):
+# O probar el Fuzz Orchestrator (Investigador Principal que coordina el ciclo):
 python3 run.py --omni fuzz-orchestrator
 # (O comando nativo: omni run omnigent/agents/fuzz-orchestrator/)
 ```
@@ -43,8 +43,8 @@ python3 run.py --omni fuzz-orchestrator
 
 ---
 
-### Opción B: Demostración Científica Paso a Paso (Human-in-the-Loop)
-Si querés experimentar el ciclo científico de descubrimiento completo con pausas interactivas y control de seguridad:
+### Opción B: Demostración en Python Directo (Local Fallback — Sin demonio de Omnigent)
+> ⚠️ **Atención:** Esta opción **NO pasa por el servidor ni los sockets de Omnigent**. Es una ejecución en Python puro (*Local Fallback Execution*). Llama a **GPT-6 Luna** en vivo vía OpenAI API y replica el flujo científico en tu consola, ideal para depurar código o probar si no querés levantar el servidor de Omnigent.
 
 ```bash
 python3 run.py --interactive
@@ -53,12 +53,12 @@ python3 run.py --interactive
   1. Envía la especificación del parser al Seed Agent (`gpt-6-luna`).
   2. Formula la hipótesis científica y genera 5 semillas de prueba.
   3. Ejecuta el fuzzing en sandbox detectando más de 30 crashes.
-  4. **Pausa de Seguridad (Omnigent Policy):** Te solicita confirmación explícita por consola (`[S/n]`).
+  4. **Pausa de Seguridad:** Te solicita confirmación explícita por consola (`[S/n]`) emulando la política de Omnigent.
   5. Reproduce fallos, clasifica vulnerabilidades por CWE (CWE-120, CWE-134, CWE-626) y actualiza la decisión con métricas de aceleración.
 
 ---
 
-### Opción C: Test Rápido Automatizado (1 comando)
+### Opción C: Test Rápido Automatizado (Local Fallback)
 ```bash
 python3 run.py --demo
 ```
