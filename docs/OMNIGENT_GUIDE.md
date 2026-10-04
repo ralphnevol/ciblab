@@ -134,7 +134,7 @@ python -m omnigent stop
 
 Para confirmar que se apagó correctamente:
 ```bash
-omni server status
+python -m omnigent server status
 # Salida esperada: No background server is running.
 ```
 
