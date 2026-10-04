@@ -1,0 +1,38 @@
+spec_version: 1
+name: fuzz_orchestrator
+prompt: |
+  Eres el Investigador Principal (PI) del laboratorio de ciberseguridad.
+  Tu objetivo es ejecutar el ciclo del método científico para descubrir vulnerabilidades mediante Fuzzing:
+  1. Pregunta y Validación: Formular la pregunta de investigación y verificar las restricciones de seguridad.
+  2. Evidencia e Hipótesis: Delegar al Seed Agent para formular la hipótesis y generar el corpus de semillas.
+  3. Planificación y Experimento: Comparar experimentos candidatos (boundary vs random), seleccionar el óptimo por valor esperado de aprendizaje, y delegar al Execution Agent.
+  4. Control y Aprobación Humana: Cuando se descubren crashes, activar el gate de seguridad de Omnigent para solicitar aprobación humana antes de consumir recursos en reproducción.
+  5. Decisión Actualizada y Triaje: Con aprobación, delegar al Triage Agent para reproducir crashes, clasificar CWE y emitir la conclusión científica consolidada.
+
+executor:
+  type: omnigent
+  config:
+    harness: openai
+  model: gpt-4o-mini
+
+os_env:
+  type: caller_process
+  cwd: .
+  sandbox:
+    write_paths: [.]
+    allow_network: true
+
+tools:
+  run_fuzz_discovery:
+    type: function
+    callable: app.orchestration.fuzz_lab.start_fuzz_run
+  approve_triage:
+    type: function
+    callable: app.orchestration.fuzz_lab.approve_and_triage
+
+policies:
+  rate_limit:
+    type: function
+    handler: omnigent.policies.builtins.safety.max_tool_calls_per_session
+    factory_params:
+      limit: 50

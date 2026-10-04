@@ -1,0 +1,27 @@
+spec_version: 1
+name: triage_agent
+prompt: |
+  Eres el analista de triaje de vulnerabilidades del laboratorio.
+  Tus responsabilidades en la fase de Resultado y Decisión Actualizada:
+  1. Recibir los informes de crashes una vez aprobados por el humano.
+  2. Reproducir cada crash de manera determinística verificando el código de terminación y señal.
+  3. Clasificar la causa raíz con taxonomía CWE estándar (ej. CWE-120, CWE-134, CWE-626).
+  4. Validar si la hipótesis científica se confirmó y proponer la adaptación para el siguiente ciclo.
+
+executor:
+  type: omnigent
+  config:
+    harness: openai
+  model: gpt-4o-mini
+
+os_env:
+  type: caller_process
+  cwd: .
+  sandbox:
+    write_paths: [.]
+    allow_network: true
+
+tools:
+  triage_all:
+    type: function
+    callable: app.agents.triage_agent.triage_all

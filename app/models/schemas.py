@@ -231,3 +231,100 @@ class EvaluationResult(BaseModel):
     justification_quality: float
     adaptation_count: int
     reproducibility_result: bool
+
+
+# ── Fuzzing Lab Schemas ──────────────────────────────────────────────
+
+
+class FuzzTarget(BaseModel):
+    """Description of the binary or program under test."""
+    model_config = ConfigDict(extra="forbid")
+    target_id: str
+    name: str
+    description: str
+    input_format: str = "stdin"
+    known_constraints: list[str] = Field(default_factory=list)
+    source: Literal["synthetic", "public"] = "synthetic"
+
+
+class SeedEntry(BaseModel):
+    """A single seed file in the corpus."""
+    model_config = ConfigDict(extra="forbid")
+    filename: str
+    content_b64: str
+    mutation_strategy: str
+    rationale: str
+
+
+class SeedCorpus(BaseModel):
+    """Hypothesis + generated seeds from the Seed Agent."""
+    model_config = ConfigDict(extra="forbid")
+    case_id: str
+    target_id: str
+    hypothesis: str
+    seeds: list[SeedEntry]
+    confidence: float = Field(ge=0, le=1)
+    timestamp: datetime = Field(default_factory=utcnow)
+
+
+class FuzzExperimentSpec(BaseModel):
+    """Specification for a fuzzing experiment."""
+    model_config = ConfigDict(extra="forbid")
+    experiment_id: str
+    case_id: str
+    target_id: str
+    corpus_strategy: str
+    duration_seconds: int = 30
+    random_seed: int = 42
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    expected_learning: float = Field(ge=0, le=1)
+    cost: int = 1
+    feasibility: float = Field(ge=0, le=1, default=0.9)
+
+    @property
+    def priority(self) -> float:
+        return self.expected_learning * self.feasibility / max(1, self.cost)
+
+
+class CrashReport(BaseModel):
+    """A single crash found during fuzzing."""
+    model_config = ConfigDict(extra="forbid")
+    crash_id: str
+    input_filename: str
+    input_hex: str
+    signal: int
+    exit_code: int
+    stderr_snippet: str
+    reproduced: bool = False
+    timestamp: datetime = Field(default_factory=utcnow)
+
+
+class TriageReport(BaseModel):
+    """Triage analysis of a reproduced crash."""
+    model_config = ConfigDict(extra="forbid")
+    crash_id: str
+    cwe_id: str
+    cwe_name: str
+    severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+    root_cause: str
+    input_hex: str
+    hypothesis_confirmed: bool
+    requires_human_approval: bool = True
+
+
+class FuzzDiscovery(BaseModel):
+    """Final consolidated scientific discovery from the fuzzing lab."""
+    model_config = ConfigDict(extra="forbid")
+    case_id: str
+    question: str
+    hypothesis: str
+    hypothesis_confirmed: bool
+    experiments_proposed: int
+    experiment_selected: str
+    crashes_found: int
+    triage_results: list[TriageReport]
+    adaptation_event: str
+    scientific_conclusion: str
+    speedup_vs_manual: float
+    reproducibility_seed: int
+    timestamp: datetime = Field(default_factory=utcnow)

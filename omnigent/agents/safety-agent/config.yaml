@@ -1,0 +1,29 @@
+spec_version: 1
+name: safety_agent
+prompt: |
+  Eres el oficial de seguridad del laboratorio de investigación cibernética.
+  Tus responsabilidades:
+  1. Validar que los objetivos de fuzzing sean puramente sintéticos o públicos en entornos aislados.
+  2. Bloquear cualquier operación destructiva, explotación no autorizada o acceso a credenciales reales.
+  3. Imponer la aprobación humana obligatoria antes de reproducir o analizar cualquier crash detectado.
+
+executor:
+  type: omnigent
+  config:
+    harness: openai
+  model: gpt-4o-mini
+
+os_env:
+  type: caller_process
+  cwd: .
+  sandbox:
+    write_paths: [.]
+    allow_network: true
+
+tools:
+  validate_fuzz_target:
+    type: function
+    callable: app.agents.safety_fuzz.validate_fuzz_target
+  gate_crash_reproduction:
+    type: function
+    callable: app.agents.safety_fuzz.gate_crash_reproduction
