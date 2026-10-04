@@ -204,11 +204,45 @@ def run_omnigent(agent_name="seed-agent"):
     )
 
 
+def register_agents():
+    """Registra los 5 agentes del laboratorio en el store persistente de Omnigent."""
+    import pathlib
+    try:
+        import omnigent.cli as c
+        import omnigent.host.local_server as ls
+        import omnigent.stores.agent_store.sqlalchemy_store as a
+        import omnigent.runtime.agent_cache as ac
+
+        d = ls._local_data_dir()
+        db = f"sqlite:///{d}/chat.db"
+        store = a.SqlAlchemyAgentStore(db, db)
+        arts = c._create_artifact_store(str(d / "artifacts"))
+        cache = ac.AgentCache(arts, d / "cache")
+
+        agents = [
+            "omnigent/agents/fuzz-orchestrator",
+            "omnigent/agents/seed-agent",
+            "omnigent/agents/execution-agent",
+            "omnigent/agents/safety-agent",
+            "omnigent/agents/triage-agent",
+        ]
+        print("\n" + "=" * 65)
+        print(" 📦 REGISTRANDO AGENTES EN OMNIGENT STORE")
+        print("=" * 65)
+        for p in agents:
+            c._preregister_agent(pathlib.Path(p), store, arts, cache)
+        print("[✓] ¡Los 5 agentes están registrados y listos para la UI en http://127.0.0.1:6767!\n")
+    except Exception as e:
+        print(f"[!] Error registrando agentes: {e}")
+
+
 if __name__ == "__main__":
     if "--omni" in sys.argv:
         idx = sys.argv.index("--omni")
         target_agent = sys.argv[idx + 1] if len(sys.argv) > idx + 1 and not sys.argv[idx + 1].startswith("-") else "seed-agent"
         run_omnigent(target_agent)
+    elif "--register" in sys.argv:
+        register_agents()
     elif "--interactive" in sys.argv or "-i" in sys.argv:
         run_interactive()
     elif "--demo" in sys.argv:
