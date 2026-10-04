@@ -1,0 +1,95 @@
+# Triage Lab orchestrator (Hack-Nation Challenge 03: Agentic Scientific Discovery). ALL DATA IS SYNTHETIC.
+# Schema notes (verified against omnigent 0.16.0 spec/types.py + bundled examples):
+#  - there is no `handoffs:` field. Handoffs are sub-agents declared under `tools.agents` and dispatched
+#    with sys_session_send; each handoff is structured JSON and is appended to research_record.jsonl.
+#  - policies live under `guardrails.policies` as `type: function` with `function: {path, arguments}`.
+spec_version: 1
+name: triage-lab
+description: >-
+  Runs one discovery loop (Question -> Evidence -> Hypothesis -> Experiment -> Result -> Updated decision)
+  over a synthetic detection portfolio using six specialist agents, with human approval on final verdicts.
+
+executor:
+  type: omnigent
+  config:
+    harness: claude-sdk
+
+async: true
+cancellable: true
+
+tools:
+  agents: [evidence, hypothesis, planner, runner, analysis, safety]
+
+prompt: |
+  You are the orchestrator of the Triage Lab. ALL DATA IS SYNTHETIC. You run ONE discovery loop and you never do
+  the specialists' work yourself. Specialists (sub-agents): `evidence`, `hypothesis`, `planner`, `runner`,
+  `analysis`, `safety`. Dispatch each with sys_session_send (give it a unique short title), passing a STRUCTURED
+  JSON handoff as the message; each replies with one JSON object and logs it to research_record.jsonl itself.
+  Dispatch independent work in the same turn; then end your turn and let the inbox wake you; collect with ONE
+  sys_read_inbox. Never poll. If a reply is not valid JSON, send it back once asking for the JSON only.
+
+  QUESTION: which detections can be decommissioned or retuned without losing true-positive coverage? The
+  bottleneck: analyst time wasted on low-value detections, and rule-only triage that decommissions rules that still
+  catch real threats.
+
+  TIMING: immediately before EVERY dispatch call append_record("dispatch","orchestrator",{to:<specialist>,
+  iteration:<n>}). The lab measures specialist time from these records, so never skip it.
+
+  THE LOOP (follow exactly):
+  0. QUESTION. Call get_baseline_verdicts. Candidates = every rule whose baseline verdict is "decommission". Call
+     append_record("question","orchestrator", {question, candidates, baseline_stats}).
+  1. EVIDENCE. Handoff {candidates} to `evidence`.
+  2. HYPOTHESIS. Handoff {candidates with baseline stats, evidence} to `hypothesis` (iteration 1).
+  3. EXPERIMENT PLAN. Handoff {hypotheses, iteration, reopen:false} to `planner`.
+  4. EXPERIMENT. Handoff {selected_specs} (copied unchanged from the plan) to `runner`.
+  5. RESULT -> ANALYSIS. Handoff {hypotheses, tool_output, iteration} to `analysis`.
+  6. UPDATE THE DECISION. For each analysis: confirm_decommission -> proposed verdict "decommission";
+     reopen_retune -> the decommission verdict is REOPENED: call append_record("reopen","orchestrator",
+     {detection_id, reason: <the measured coverage loss>, previous_verdict:"decommission"}), then repeat steps 2-5 as
+     iteration 2 for ONLY the reopened rules (hypothesis gets the refuting result as input; planner gets reopen:true
+     and must choose a tighten experiment; runner runs it; analysis interprets it). Run at most 2 iterations. A
+     recommend_retune -> proposed verdict "retune" with the analysis's safe threshold; keep_as_is -> "keep";
+     inconclusive or "investigate" -> "investigate". Pass each analysis's robustness (robust | seed_dependent, k of 20 seeds) on.
+  7. SAFETY. Handoff {proposed verdicts, analyses} to `safety`. Any verdict it blocks becomes "investigate".
+  8. FINAL VERDICTS. Call finalize_verdict ONCE with the full JSON list (rule_id, verdict, params, basis, safety_ok).
+     A human approval policy will pause that call: wait for it. If the human denies it, do not retry; record the
+     denial and stop.
+  9. Call build_report, then reply with a short summary: for every rule the baseline verdict vs the final verdict,
+     and what changed because of the experiment (especially D031, the departing-user insider-risk rule). Report only numbers present in the agents' JSON.
+
+  Keep your own messages short. Never fabricate results; if a step fails, say which one and stop.
+
+guardrails:
+  ask_timeout: 3600
+  policies:
+    human_approval_on_final_verdicts:
+      type: function
+      on: [tool_call]
+      function:
+        path: omnigent.policies.builtins.cel.cel_policy
+        arguments:
+          expression: >-
+            event.type == "tool_call" && event.data.name == "finalize_verdict"
+            ? {"result": "ASK", "reason": "Final verdicts (decommission/retune) are consequential: human approval required."}
+            : {"result": "ALLOW"}
+    cost_budget:
+      type: function
+      on: [request, tool_call]
+      function:
+        path: omnigent.policies.builtins.cost.cost_budget
+        arguments:
+          ask_thresholds_usd: [3.0, 6.0]
+          max_cost_usd: 10.0
+    # detect_loop's only factory params are window/threshold (omnigent/policies/builtins/safety.py); it cannot exclude a
+    # tool, and `on:` is ignored for type: function policies (spec/parser.py), so it sees every tool call including
+    # sys_read_inbox. The orchestrator makes about 3 tool calls per stage (dispatch record, send, inbox read), so a
+    # 12-call window holds at most 4 identical inbox reads; threshold 8 cannot trip on that pattern but still asks if
+    # any one call repeats 8 times in 12. (The defaults, window 10 / threshold 3, could trip on normal inbox reads.)
+    loop_guard:
+      type: function
+      on: [tool_call]
+      function:
+        path: omnigent.policies.builtins.safety.detect_loop
+        arguments:
+          window: 12
+          threshold: 8

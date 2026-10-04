@@ -1,0 +1,31 @@
+detection_id,name,mitre_technique,fires_30d,true_positives,analyst_minutes_per_alert,last_tuned_days,data_source_healthy
+D001,Failed Login Burst,T1110,1211,10,6,410,true
+D002,PowerShell Any Execution,T1059.001,1507,7,8,520,true
+D003,DNS Query to Rare TLD,T1071.004,903,5,7,300,true
+D004,New Scheduled Task Created,T1053.005,787,7,9,380,true
+D005,Document Application Spawns Child Process,T1204.002,658,8,10,450,true
+D006,Outbound Traffic Non-Standard Port,T1571,1105,7,5,600,true
+D007,LSASS Memory Access,T1003.001,24,16,25,20,true
+D008,Credential Dumper Command Line,T1003,10,7,30,15,true
+D009,Ransomware Mass File Rename,T1486,7,5,40,30,true
+D010,Known C2 Framework Beacon Signature,T1071.001,13,9,30,25,true
+D011,Kerberoasting Ticket Request,T1558.003,24,13,20,45,true
+D012,Shadow Copy Deletion,T1490,4,3,25,60,true
+D013,Suspicious Service Install,T1543.003,27,5,15,40,true
+D014,Golden Ticket Anomaly,T1558.001,5,4,45,50,true
+D016,WMI Remote Execution,T1047,83,4,15,200,true
+D017,Registry Run Key Modified,T1547.001,141,5,10,250,true
+D018,Rare Parent-Child Process Pair,T1055,103,2,12,180,true
+D019,Cloud Console Login New Country,T1078.004,65,4,10,90,true
+D020,Browser Credential File Access,T1555.003,45,5,15,300,true
+D021,Large Outbound Upload,T1048,38,5,14,220,true
+D022,Remote Desktop From Workstation,T1021.001,118,7,8,150,true
+D023,Archive Created in Temp Dir,T1560.001,97,6,11,330,true
+D024,Linux Sudo Brute Force,T1110.001,47,1,9,120,false
+D025,Proxy Category Uncategorized,T1102,293,4,6,480,true
+D026,Endpoint Agent Tamper,T1562.001,23,3,20,70,false
+D027,Email Forwarding Rule Created,T1114.003,38,5,12,160,true
+D028,DLL Search Order Hijack,T1574.001,31,5,22,280,true
+D029,Host Event Log Cleared,T1070.001,18,3,15,100,false
+D030,Container Exec in Prod,T1609,20,2,18,60,true
+D031,Departing-User Sensitive Data Egress,T1213.003;T1567.002;T1052.001;T1048,14,0,20,140,true
