@@ -1,0 +1,16 @@
+allow:
+  - synthetic_data_generation
+  - local_analysis
+  - public_research
+  - rule_evaluation
+  - metrics_calculation
+require_human:
+  - decommission
+block:
+  - real_employee_telemetry
+  - real_production_telemetry
+  - real_world_offensive_execution
+  - arbitrary_network_attacks
+  - credential_access
+  - secret_extraction
+  - destructive_operations

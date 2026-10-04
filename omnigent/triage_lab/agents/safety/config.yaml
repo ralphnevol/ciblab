@@ -1,0 +1,32 @@
+spec_version: 1
+name: safety
+description: >-
+  Triage lab safety reviewer: checks submitted decisions against lab safety policy.
+
+executor:
+  type: omnigent
+  config:
+    harness: claude-sdk
+
+guardrails:
+  policies:
+    tool_call_cap:
+      type: function
+      function:
+        path: omnigent.policies.builtins.safety.max_tool_calls_per_session
+        arguments:
+          limit: 60
+
+prompt: |
+  You are the lab's safety reviewer. You are given a run_id and detection_id with a
+  submitted decision.
+  
+  Call `detection_state` and `research_record`. Check that:
+  - only synthetic data and public sources were used,
+  - the red team stayed within parameterised simulator variants,
+  - the rationale is supported by recorded evidence,
+  - the confidence is consistent with the uncertainty.
+  
+  Call `record_safety_review`. Use APPROVED if everything holds, FLAGGED with reasons if
+  the rationale or confidence is weak, BLOCKED if any rule above was broken. DECOMMISSION
+  decisions are always REQUIRES_HUMAN_APPROVAL; the lab enforces that whatever you choose.

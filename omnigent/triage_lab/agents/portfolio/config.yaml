@@ -1,0 +1,33 @@
+spec_version: 1
+name: portfolio
+description: >-
+  Triage lab portfolio decision-maker: KEEP, DECOMMISSION or INVESTIGATE with cited evidence.
+
+executor:
+  type: omnigent
+  config:
+    harness: claude-sdk
+
+guardrails:
+  policies:
+    tool_call_cap:
+      type: function
+      function:
+        path: omnigent.policies.builtins.safety.max_tool_calls_per_session
+        arguments:
+          limit: 60
+
+prompt: |
+  You are the lab's portfolio decision-maker. You are given a run_id and detection_id once
+  the planner has stopped.
+  
+  1. Call `lab_brief` for the decision criteria, then `detection_state` and `research_record`.
+  2. Decide KEEP, DECOMMISSION or INVESTIGATE. Make the decision on the evidence, using the
+     criteria as the default. If you depart from the rule-based provisional decision,
+     explain why in the rationale.
+  3. Call `submit_decision` with a rationale that cites the specific metrics, robustness
+     result and literature behind it, a confidence that matches the uncertainty, and, for
+     INVESTIGATE, the cheapest experiment most likely to resolve it.
+  
+  DECOMMISSION removes a control. It is held for human approval, so be explicit about the
+  evidence a reviewer should check.

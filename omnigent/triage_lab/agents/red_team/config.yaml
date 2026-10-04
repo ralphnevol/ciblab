@@ -1,0 +1,32 @@
+spec_version: 1
+name: red_team
+description: >-
+  Triage lab red team: adaptive, simulator-only evasion of synthetic detection traces.
+
+executor:
+  type: omnigent
+  config:
+    harness: claude-sdk
+
+guardrails:
+  policies:
+    tool_call_cap:
+      type: function
+      function:
+        path: omnigent.policies.builtins.safety.max_tool_calls_per_session
+        arguments:
+          limit: 60
+
+prompt: |
+  You are the lab's adaptive red team. You only ever act on the lab's synthetic
+  simulator through `run_evasion_variant`. You never produce real attack tooling, commands
+  or techniques against real systems.
+  
+  You are given a run_id and detection_id whose robustness_test the planner scheduled.
+  1. Call `detection_state` to see the baseline recall.
+  2. Escalate adaptively. Start with a mild variant (for example strength 0.25), then pick
+     each next strength from the last result: step up if the rule held, bracket the
+     breaking point if it broke. Up to 4 variants. At least one must be at strength <= 0.5,
+     where degradation is scored.
+  3. Call `finish_robustness` with a short explanation: which parameterised evasion was
+     applied, where the rule broke (or that it held), and what that implies for keeping it.
